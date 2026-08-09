@@ -86,7 +86,7 @@ export function GoalReportCard({
                 />
                 {goal.direction === "ceiling" && overPct > 0 && (
                   <div
-                    className="absolute inset-y-0 bg-carbs/80"
+                    className={`absolute inset-y-0 ${status === "off" ? "bg-danger" : "bg-carbs/80"}`}
                     style={{ left: `${tickPct}%`, width: `${overPct}%` }}
                   />
                 )}
@@ -98,9 +98,11 @@ export function GoalReportCard({
               </div>
               <p
                 className={`tnum mt-0.5 text-xs ${
-                  goal.direction === "ceiling" && status !== "hit"
-                    ? "font-medium text-amber-ink"
-                    : "text-muted"
+                  goal.direction === "ceiling" && status === "off"
+                    ? "font-medium text-danger"
+                    : goal.direction === "ceiling" && status === "near"
+                      ? "font-medium text-amber-ink"
+                      : "text-muted"
                 }`}
               >
                 {sub}

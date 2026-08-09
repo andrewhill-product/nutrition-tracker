@@ -54,15 +54,16 @@ export function goalTarget(targets: Targets, key: GoalKey): number {
 }
 
 /**
- * Ceilings: hit at or under 105% of the limit, near-miss to 120%, off beyond.
- * Floors: hit at or above 90% of the target, near-miss from 75%, off below.
+ * Ceilings: hit at or under 105% of the limit, near-miss to 125%, off beyond
+ * (Andrew wants a 25% overrun treated as serious). Floors: hit at or above
+ * 90% of the target, near-miss from 75%, off below.
  */
 export function goalStatus(direction: Direction, value: number, target: number): GoalStatus {
   if (target <= 0) return "hit";
   const ratio = value / target;
   if (direction === "ceiling") {
     if (ratio <= 1.05) return "hit";
-    if (ratio <= 1.2) return "near";
+    if (ratio <= 1.25) return "near";
     return "off";
   }
   if (ratio >= 0.9) return "hit";
