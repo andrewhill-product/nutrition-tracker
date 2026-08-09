@@ -24,6 +24,7 @@ export const AnalysisItem = z.object({
   carbs_g: z.number().min(0),
   fat_g: z.number().min(0),
   fibre_g: z.number().min(0),
+  sugar_g: z.number().min(0),
   confidence: z.number().min(0).max(1),
 });
 export type AnalysisItemT = z.infer<typeof AnalysisItem>;
@@ -51,6 +52,7 @@ export const MealItemInput = z.object({
   ai_carbs_g: z.number().min(0).nullish().default(null),
   ai_fat_g: z.number().min(0).nullish().default(null),
   ai_fibre_g: z.number().min(0).nullish().default(null),
+  ai_sugar_g: z.number().min(0).nullish().default(null),
   ai_confidence: z.number().min(0).max(1).nullish().default(null),
   verdict: VerdictEnum,
   final_grams: z.number().int().min(0).nullish().default(null),
@@ -59,6 +61,7 @@ export const MealItemInput = z.object({
   final_carbs_g: z.number().min(0).nullish().default(null),
   final_fat_g: z.number().min(0).nullish().default(null),
   final_fibre_g: z.number().min(0).nullish().default(null),
+  final_sugar_g: z.number().min(0).nullish().default(null),
 });
 export type MealItemInputT = z.infer<typeof MealItemInput>;
 
@@ -111,6 +114,7 @@ export const TargetsInput = z.object({
   carbs_g: z.number().int().min(0).max(2000),
   fat_g: z.number().int().min(0).max(1000),
   fibre_g: z.number().int().min(0).max(200),
+  sugar_g: z.number().int().min(0).max(500),
 });
 export type TargetsInputT = z.infer<typeof TargetsInput>;
 
@@ -124,6 +128,7 @@ export const ImportRow = z.object({
   carbs_g: z.number().min(0).nullish().default(null),
   fat_g: z.number().min(0).nullish().default(null),
   fibre_g: z.number().min(0).nullish().default(null),
+  sugar_g: z.number().min(0).nullish().default(null),
   // Only set when the estimate step produced the numbers (AI provenance).
   ai_confidence: z.number().min(0).max(1).nullish().default(null),
 });
@@ -175,6 +180,7 @@ export function resolveFinals(item: MealItemInputT): MealItemInputT {
         final_carbs_g: item.ai_carbs_g ?? null,
         final_fat_g: item.ai_fat_g ?? null,
         final_fibre_g: item.ai_fibre_g ?? null,
+        final_sugar_g: item.ai_sugar_g ?? null,
       };
     case "edited":
       if (
@@ -198,6 +204,7 @@ export function resolveFinals(item: MealItemInputT): MealItemInputT {
         final_carbs_g: null,
         final_fat_g: null,
         final_fibre_g: null,
+        final_sugar_g: null,
       };
   }
 }

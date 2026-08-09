@@ -61,6 +61,14 @@ Every call made without asking, grouped by area.
 - Rows whose numbers came from the sheet keep `ai_confidence` NULL; only the estimate step sets it (AI provenance). Estimated rows aggregate the analysis items into one meal item, with confidence = the minimum item confidence.
 - Estimate failures stay importable with a "No estimate" chip; those items require full manual entry at log time.
 
+## Insights and sugar tracking
+
+- Sugar was added end to end (estimation schema, review, targets, import, export) to power the Insights tab. It tracks TOTAL sugars, the label's "of which sugars" figure, with a default ceiling of 90g (the UK label reference intake). The NHS 30g a day figure is for free sugars, which labels do not declare separately and Claude cannot reliably distinguish; the Settings caption explains the difference. Meal items logged before the sugar column existed have NULL sugar and count as 0 in totals.
+- Goals are direction-aware (src/lib/goals.ts): calories, carbs, fat and sugar are ceilings; protein and fibre are floors. Ceilings count as hit up to 105% (near-miss to 120%), floors from 90% (near-miss from 75%). A day scores only when it has 2 or more logged meals and at least 50% of the calorie target, so a barely-logged day is never a green tick or a miss; the headline on-track verdict uses calories and protein only, with the other goals shown as a hit count.
+- Insights copy is adherence-neutral: amber is the maximum severity (no red anywhere in the tab), overruns are stated as facts ("12g over the limit"), and every rate prints its denominator over scored days only. The streak counts logged days, not goals hit, and totals are computed over the fetched 5 week window (a longer history would need a wider query, noted as v2).
+- The day boundary for scoring is the meal's stored date, which the user picks at capture; no 3am boundary shifting is applied because meals are bucketed explicitly, not by timestamp.
+- These design choices follow a research pass over MacroFactor, Cronometer, Lose It, MyFitnessPal and Apple Health patterns (direction-aware bars with a target tick, amber-never-red overruns, honest in-progress denominators, adherence-neutral trend framing with a 7 day rolling average).
+
 ## UI and PWA
 
 - Hand-rolled SVG kcal ring and macro bars; Recharts only for the week chart (client leaf, renders after mount).

@@ -14,6 +14,7 @@
   --carbs: #d97706;
   --fat: #e11d48;
   --fibre: #059669;
+  --sugar: #c026d3;
   --danger: #dc2626;
   --amber-soft: #fef3c7;
   --amber-ink: #92400e;
@@ -34,6 +35,7 @@
     --carbs: #fbbf24;
     --fat: #fb7185;
     --fibre: #34d399;
+    --sugar: #e879f9;
     --danger: #f87171;
     --amber-soft: #451a03;
     --amber-ink: #fcd34d;
@@ -54,6 +56,7 @@
   --color-carbs: var(--carbs);
   --color-fat: var(--fat);
   --color-fibre: var(--fibre);
+  --color-sugar: var(--sugar);
   --color-danger: var(--danger);
   --color-amber-soft: var(--amber-soft);
   --color-amber-ink: var(--amber-ink);

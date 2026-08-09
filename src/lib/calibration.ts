@@ -65,6 +65,7 @@ function describeAi(item: MealItem): string {
     item.aiCarbsG !== null ? `${item.aiCarbsG}g carbs` : null,
     item.aiFatG !== null ? `${item.aiFatG}g fat` : null,
     item.aiFibreG !== null ? `${item.aiFibreG}g fibre` : null,
+    item.aiSugarG !== null ? `${item.aiSugarG}g sugar` : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -79,6 +80,7 @@ function describeFinal(item: MealItem): string {
     item.finalCarbsG !== null ? `${item.finalCarbsG}g carbs` : null,
     item.finalFatG !== null ? `${item.finalFatG}g fat` : null,
     item.finalFibreG !== null ? `${item.finalFibreG}g fibre` : null,
+    item.finalSugarG !== null ? `${item.finalSugarG}g sugar` : null,
   ]
     .filter(Boolean)
     .join(", ");

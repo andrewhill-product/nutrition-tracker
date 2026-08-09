@@ -3,14 +3,15 @@ const BARS = [
   { key: "carbs", label: "Carbs", color: "bg-carbs" },
   { key: "fat", label: "Fat", color: "bg-fat" },
   { key: "fibre", label: "Fibre", color: "bg-fibre" },
+  { key: "sugar", label: "Sugar", color: "bg-sugar" },
 ] as const;
 
 export function MacroBars({
   values,
   targets,
 }: {
-  values: { protein: number; carbs: number; fat: number; fibre: number };
-  targets: { protein: number; carbs: number; fat: number; fibre: number };
+  values: { protein: number; carbs: number; fat: number; fibre: number; sugar: number };
+  targets: { protein: number; carbs: number; fat: number; fibre: number; sugar: number };
 }) {
   return (
     <div className="space-y-2.5">

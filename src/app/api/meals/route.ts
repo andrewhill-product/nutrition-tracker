@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
           aiCarbsG: i.ai_carbs_g ?? null,
           aiFatG: i.ai_fat_g ?? null,
           aiFibreG: i.ai_fibre_g ?? null,
+          aiSugarG: i.ai_sugar_g ?? null,
           aiConfidence: i.ai_confidence ?? null,
           verdict: i.verdict,
           finalGrams: i.final_grams ?? null,
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
           finalCarbsG: i.final_carbs_g ?? null,
           finalFatG: i.final_fat_g ?? null,
           finalFibreG: i.final_fibre_g ?? null,
+          finalSugarG: i.final_sugar_g ?? null,
         }))
       );
       return created;

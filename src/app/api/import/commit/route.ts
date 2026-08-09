@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
           aiCarbsG: row.carbs_g ?? null,
           aiFatG: row.fat_g ?? null,
           aiFibreG: row.fibre_g ?? null,
+          aiSugarG: row.sugar_g ?? null,
           aiConfidence: row.ai_confidence ?? null,
           verdict: "up",
           finalGrams: row.grams ?? null,
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
           finalCarbsG: row.carbs_g ?? null,
           finalFatG: row.fat_g ?? null,
           finalFibreG: row.fibre_g ?? null,
+          finalSugarG: row.sugar_g ?? null,
         });
       }
     });

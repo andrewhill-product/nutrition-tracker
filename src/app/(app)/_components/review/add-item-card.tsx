@@ -26,6 +26,7 @@ export function AddItemCard({
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
   const [fibre, setFibre] = useState("");
+  const [sugar, setSugar] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +38,7 @@ export function AddItemCard({
     setCarbs("");
     setFat("");
     setFibre("");
+    setSugar("");
     setManual(false);
     setError(null);
   }
@@ -84,6 +86,7 @@ export function AddItemCard({
         carbs: null,
         fat: null,
         fibre: null,
+        sugar: null,
         confidence: null,
       },
       // A manual entry is the human's own numbers: verdict "edited".
@@ -95,6 +98,7 @@ export function AddItemCard({
         carbs: num(carbs),
         fat: num(fat),
         fibre: num(fibre),
+        sugar: num(sugar),
       },
       overridden: {},
     });
@@ -142,6 +146,7 @@ export function AddItemCard({
           <input className={input} type="number" inputMode="decimal" min={0} placeholder="Carbs g" value={carbs} onChange={(e) => setCarbs(e.target.value)} />
           <input className={input} type="number" inputMode="decimal" min={0} placeholder="Fat g" value={fat} onChange={(e) => setFat(e.target.value)} />
           <input className={input} type="number" inputMode="decimal" min={0} placeholder="Fibre g" value={fibre} onChange={(e) => setFibre(e.target.value)} />
+          <input className={input} type="number" inputMode="decimal" min={0} placeholder="Sugar g" value={sugar} onChange={(e) => setSugar(e.target.value)} />
         </div>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}

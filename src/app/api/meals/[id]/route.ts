@@ -74,6 +74,7 @@ export async function PUT(
           aiCarbsG: i.ai_carbs_g ?? null,
           aiFatG: i.ai_fat_g ?? null,
           aiFibreG: i.ai_fibre_g ?? null,
+          aiSugarG: i.ai_sugar_g ?? null,
           aiConfidence: i.ai_confidence ?? null,
           verdict: i.verdict,
           finalGrams: i.final_grams ?? null,
@@ -82,6 +83,7 @@ export async function PUT(
           finalCarbsG: i.final_carbs_g ?? null,
           finalFatG: i.final_fat_g ?? null,
           finalFibreG: i.final_fibre_g ?? null,
+          finalSugarG: i.final_sugar_g ?? null,
         })),
         ...preservedRemoved.map((row) => ({
           mealId: row.mealId,
@@ -93,6 +95,7 @@ export async function PUT(
           aiCarbsG: row.aiCarbsG,
           aiFatG: row.aiFatG,
           aiFibreG: row.aiFibreG,
+          aiSugarG: row.aiSugarG,
           aiConfidence: row.aiConfidence,
           verdict: row.verdict,
           finalGrams: row.finalGrams,
@@ -101,6 +104,7 @@ export async function PUT(
           finalCarbsG: row.finalCarbsG,
           finalFatG: row.finalFatG,
           finalFibreG: row.finalFibreG,
+          finalSugarG: row.finalSugarG,
         })),
       ]);
     });

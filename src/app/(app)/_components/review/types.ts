@@ -8,7 +8,7 @@ import type {
 } from "@/lib/schemas";
 import type { MealWithItems } from "@/lib/totals";
 
-export type MacroKey = "kcal" | "protein" | "carbs" | "fat" | "fibre";
+export type MacroKey = "kcal" | "protein" | "carbs" | "fat" | "fibre" | "sugar";
 
 export type AiValues = {
   portionDesc: string | null;
@@ -18,6 +18,7 @@ export type AiValues = {
   carbs: number | null;
   fat: number | null;
   fibre: number | null;
+  sugar: number | null;
   confidence: number | null;
 };
 
@@ -28,6 +29,7 @@ export type FinalValues = {
   carbs: number | null;
   fat: number | null;
   fibre: number | null;
+  sugar: number | null;
 };
 
 export type ReviewItem = {
@@ -77,6 +79,7 @@ export function itemFromAnalysis(a: AnalysisItemT): ReviewItem {
       carbs: a.carbs_g,
       fat: a.fat_g,
       fibre: a.fibre_g,
+      sugar: a.sugar_g,
       confidence: a.confidence,
     },
     verdict: null,
@@ -87,6 +90,7 @@ export function itemFromAnalysis(a: AnalysisItemT): ReviewItem {
       carbs: a.carbs_g,
       fat: a.fat_g,
       fibre: a.fibre_g,
+      sugar: a.sugar_g,
     },
     overridden: {},
   };
@@ -154,6 +158,7 @@ export function draftFromMeal(
         carbs: item.aiCarbsG,
         fat: item.aiFatG,
         fibre: item.aiFibreG,
+        sugar: item.aiSugarG,
         confidence: item.aiConfidence,
       },
       // Conversion mode resets every verdict to unreviewed: the stored
@@ -168,6 +173,7 @@ export function draftFromMeal(
               carbs: item.finalCarbsG ?? item.aiCarbsG,
               fat: item.finalFatG ?? item.aiFatG,
               fibre: item.finalFibreG ?? item.aiFibreG,
+              sugar: item.finalSugarG ?? item.aiSugarG,
             }
           : {
               grams: item.finalGrams,
@@ -176,6 +182,7 @@ export function draftFromMeal(
               carbs: item.finalCarbsG,
               fat: item.finalFatG,
               fibre: item.finalFibreG,
+              sugar: item.finalSugarG,
             },
       overridden: {},
     })),
@@ -218,6 +225,11 @@ export function scaleFinals(item: ReviewItem, grams: number): FinalValues {
       : ai.fibre !== null
         ? round1(ai.fibre * factor)
         : final.fibre,
+    sugar: overridden.sugar
+      ? final.sugar
+      : ai.sugar !== null
+        ? round1(ai.sugar * factor)
+        : final.sugar,
   };
 }
 
@@ -227,11 +239,12 @@ export type LiveTotals = {
   carbs: number;
   fat: number;
   fibre: number;
+  sugar: number;
 };
 
 /** Live footer totals over items that are not removed. */
 export function liveTotals(items: ReviewItem[]): LiveTotals {
-  const t: LiveTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 };
+  const t: LiveTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: 0 };
   for (const item of items) {
     if (item.verdict === "removed") continue;
     t.kcal += item.final.kcal ?? 0;
@@ -239,6 +252,7 @@ export function liveTotals(items: ReviewItem[]): LiveTotals {
     t.carbs += item.final.carbs ?? 0;
     t.fat += item.final.fat ?? 0;
     t.fibre += item.final.fibre ?? 0;
+    t.sugar += item.final.sugar ?? 0;
   }
   return t;
 }
@@ -253,6 +267,7 @@ type PayloadItem = {
   ai_carbs_g: number | null;
   ai_fat_g: number | null;
   ai_fibre_g: number | null;
+  ai_sugar_g: number | null;
   ai_confidence: number | null;
   verdict: Verdict;
   final_grams: number | null;
@@ -261,6 +276,7 @@ type PayloadItem = {
   final_carbs_g: number | null;
   final_fat_g: number | null;
   final_fibre_g: number | null;
+  final_sugar_g: number | null;
 };
 
 /**
@@ -285,6 +301,7 @@ export function toPayloadItems(
             final_carbs_g: null,
             final_fat_g: null,
             final_fibre_g: null,
+            final_sugar_g: null,
           }
         : {
             final_grams: item.final.grams,
@@ -293,6 +310,7 @@ export function toPayloadItems(
             final_carbs_g: item.final.carbs,
             final_fat_g: item.final.fat,
             final_fibre_g: item.final.fibre,
+            final_sugar_g: item.final.sugar,
           };
     return {
       ...(item.dbId !== undefined ? { id: item.dbId } : {}),
@@ -304,6 +322,7 @@ export function toPayloadItems(
       ai_carbs_g: item.ai.carbs,
       ai_fat_g: item.ai.fat,
       ai_fibre_g: item.ai.fibre,
+      ai_sugar_g: item.ai.sugar,
       ai_confidence: item.ai.confidence,
       verdict,
       ...finals,

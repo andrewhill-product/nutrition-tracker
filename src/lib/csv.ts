@@ -18,9 +18,9 @@ function row(cells: unknown[]): string {
 const MEAL_ITEM_HEADER = [
   "meal_id", "date", "slot", "meal_name", "source", "status", "photo_url", "meal_notes",
   "meal_created_at", "item_id", "item_name", "ai_portion_desc", "ai_grams", "ai_kcal",
-  "ai_protein_g", "ai_carbs_g", "ai_fat_g", "ai_fibre_g", "ai_confidence", "verdict",
-  "final_grams", "final_kcal", "final_protein_g", "final_carbs_g", "final_fat_g",
-  "final_fibre_g",
+  "ai_protein_g", "ai_carbs_g", "ai_fat_g", "ai_fibre_g", "ai_sugar_g", "ai_confidence",
+  "verdict", "final_grams", "final_kcal", "final_protein_g", "final_carbs_g",
+  "final_fat_g", "final_fibre_g", "final_sugar_g",
 ];
 
 function mealItemRow(meal: MealWithItems, item: MealItem): string {
@@ -28,8 +28,8 @@ function mealItemRow(meal: MealWithItems, item: MealItem): string {
     meal.id, meal.date, meal.slot, meal.name, meal.source, meal.status, meal.photoUrl,
     meal.notes, meal.createdAt.toISOString(), item.id, item.name, item.aiPortionDesc,
     item.aiGrams, item.aiKcal, item.aiProteinG, item.aiCarbsG, item.aiFatG, item.aiFibreG,
-    item.aiConfidence, item.verdict, item.finalGrams, item.finalKcal, item.finalProteinG,
-    item.finalCarbsG, item.finalFatG, item.finalFibreG,
+    item.aiSugarG, item.aiConfidence, item.verdict, item.finalGrams, item.finalKcal,
+    item.finalProteinG, item.finalCarbsG, item.finalFatG, item.finalFibreG, item.finalSugarG,
   ]);
 }
 
@@ -50,9 +50,9 @@ export function buildExportCsv(
   }
   lines.push("");
   lines.push("# targets");
-  lines.push(row(["kcal", "protein_g", "carbs_g", "fat_g", "fibre_g"]));
+  lines.push(row(["kcal", "protein_g", "carbs_g", "fat_g", "fibre_g", "sugar_g"]));
   lines.push(
-    row([targetsRow.kcal, targetsRow.proteinG, targetsRow.carbsG, targetsRow.fatG, targetsRow.fibreG])
+    row([targetsRow.kcal, targetsRow.proteinG, targetsRow.carbsG, targetsRow.fatG, targetsRow.fibreG, targetsRow.sugarG])
   );
   lines.push("");
   lines.push("# calibration_notes");

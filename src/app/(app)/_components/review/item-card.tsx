@@ -54,6 +54,7 @@ export function ItemCard({
         carbs: item.ai.carbs,
         fat: item.ai.fat,
         fibre: item.ai.fibre,
+        sugar: item.ai.sugar,
       },
       overridden: {},
     });
@@ -111,6 +112,8 @@ export function ItemCard({
         <span className="text-fat">F {fmt(item.final.fat, 1)}g</span>
         {" · "}
         <span className="text-fibre">Fb {fmt(item.final.fibre, 1)}g</span>
+        {" · "}
+        <span className="text-sugar">Su {fmt(item.final.sugar, 1)}g</span>
       </p>
 
       {editing ? (

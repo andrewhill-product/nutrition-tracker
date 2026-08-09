@@ -42,12 +42,14 @@ export default async function TodayPage({
             carbs: totals.carbs_g,
             fat: totals.fat_g,
             fibre: totals.fibre_g,
+            sugar: totals.sugar_g,
           }}
           targets={{
             protein: targets.proteinG,
             carbs: targets.carbsG,
             fat: targets.fatG,
             fibre: targets.fibreG,
+            sugar: targets.sugarG,
           }}
         />
 

@@ -11,6 +11,7 @@ export function buildAnalyseSystem(
       "Assume UK portion sizes and UK supermarket brands.",
       "Give weights as cooked weights in grams.",
       "If the photo shows food packaging or a nutrition label, read the product name, portion size and stated values from the pack and use them in preference to visual estimation, converting per-100g figures to the portion eaten; label-read values deserve high confidence.",
+      "sugar_g is total sugars (the label's 'of which sugars' figure).",
       "Use British English food names.",
       "Give each item a confidence between 0 and 1.",
       "Return JSON only matching the requested schema. No prose, no code fences.",

@@ -6,6 +6,7 @@ export type MacroTotals = {
   carbs_g: number;
   fat_g: number;
   fibre_g: number;
+  sugar_g: number;
 };
 
 export const ZERO_TOTALS: MacroTotals = {
@@ -14,6 +15,7 @@ export const ZERO_TOTALS: MacroTotals = {
   carbs_g: 0,
   fat_g: 0,
   fibre_g: 0,
+  sugar_g: 0,
 };
 
 export function addTotals(a: MacroTotals, b: MacroTotals): MacroTotals {
@@ -23,6 +25,7 @@ export function addTotals(a: MacroTotals, b: MacroTotals): MacroTotals {
     carbs_g: a.carbs_g + b.carbs_g,
     fat_g: a.fat_g + b.fat_g,
     fibre_g: a.fibre_g + b.fibre_g,
+    sugar_g: a.sugar_g + b.sugar_g,
   };
 }
 
@@ -40,6 +43,7 @@ export function itemsTotals(items: MealItem[]): MacroTotals {
       carbs_g: item.finalCarbsG ?? 0,
       fat_g: item.finalFatG ?? 0,
       fibre_g: item.finalFibreG ?? 0,
+      sugar_g: item.finalSugarG ?? 0,
     });
   }
   return t;

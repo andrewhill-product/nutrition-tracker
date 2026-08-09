@@ -52,6 +52,8 @@ Then open `http://<your-mac-ip>:3000` on the phone (same Wi-Fi). The auth cookie
 
 ## Notes
 
+- The Insights tab answers "did I hit my goals today": direction-aware bars with a target tick per nutrient (calories, carbs, fat and sugar are limits; protein and fibre are minimums), week dots, a 4 week grid, goal hit rates over fully-logged days, a logging streak and a 30 day calorie trend with a 7 day rolling average. Sugar tracks total sugars (label figure) against the UK 90g reference intake, editable in Settings.
+
 - The seeded example meals include corrections (an edited rice portion, an edited bread weight, a removed butter item) so the calibration loop has data on day one. They are written as generically true UK portion facts; deleting the example meals removes their influence on calibration.
 - All totals compute from reviewed `final_*` values only; planned dinners never count until you convert them via review.
 - Export (Settings) produces one CSV with three labelled sections: meals x items, targets, calibration notes.

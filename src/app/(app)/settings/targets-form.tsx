@@ -12,6 +12,7 @@ type TargetsValue = {
   carbs_g: number;
   fat_g: number;
   fibre_g: number;
+  sugar_g: number;
 };
 
 const ROWS: { key: keyof TargetsValue; label: string; step: number; unit: string }[] = [
@@ -20,6 +21,7 @@ const ROWS: { key: keyof TargetsValue; label: string; step: number; unit: string
   { key: "carbs_g", label: "Carbs", step: 5, unit: "g" },
   { key: "fat_g", label: "Fat", step: 5, unit: "g" },
   { key: "fibre_g", label: "Fibre", step: 1, unit: "g" },
+  { key: "sugar_g", label: "Sugar (limit)", step: 5, unit: "g" },
 ];
 
 export function TargetsForm({ initial }: { initial: TargetsValue }) {
@@ -44,6 +46,10 @@ export function TargetsForm({ initial }: { initial: TargetsValue }) {
   return (
     <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
       <h2 className="font-semibold">Daily targets</h2>
+      <p className="text-xs text-muted">
+        Sugar counts total sugars, as printed on food labels. The UK reference
+        intake is 90g a day; the NHS 30g limit refers to free sugars only.
+      </p>
       {ROWS.map((row) => (
         <div key={row.key} className="flex items-center justify-between gap-2">
           <span className="text-sm">{row.label}</span>

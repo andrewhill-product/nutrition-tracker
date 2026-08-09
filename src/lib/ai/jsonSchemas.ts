@@ -22,6 +22,7 @@ export const ANALYSIS_JSON_SCHEMA = {
           "carbs_g",
           "fat_g",
           "fibre_g",
+          "sugar_g",
           "confidence",
         ],
         properties: {
@@ -33,6 +34,7 @@ export const ANALYSIS_JSON_SCHEMA = {
           carbs_g: { type: "number" },
           fat_g: { type: "number" },
           fibre_g: { type: "number" },
+          sugar_g: { type: "number" },
           confidence: { type: "number" },
         },
       },

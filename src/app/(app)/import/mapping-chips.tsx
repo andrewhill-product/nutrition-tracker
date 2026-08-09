@@ -11,6 +11,7 @@ const ROLES: { role: ColumnRole; label: string }[] = [
   { role: "carbs", label: "Carbs" },
   { role: "fat", label: "Fat" },
   { role: "fibre", label: "Fibre" },
+  { role: "sugar", label: "Sugar" },
 ];
 
 /** Tappable chips to correct the column guesses. */

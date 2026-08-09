@@ -20,6 +20,7 @@ export default async function SettingsPage() {
           carbs_g: targets.carbsG,
           fat_g: targets.fatG,
           fibre_g: targets.fibreG,
+          sugar_g: targets.sugarG,
         }}
       />
       <CalibrationCard notes={notes} />

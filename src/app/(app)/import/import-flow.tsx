@@ -100,6 +100,7 @@ export function ImportFlow({ plannedDates }: { plannedDates: string[] }) {
           carbs: sum((i) => i.carbs_g),
           fat: sum((i) => i.fat_g),
           fibre: sum((i) => i.fibre_g),
+          sugar: sum((i) => i.sugar_g),
           confidence: Math.min(...items.map((i) => i.confidence)),
         };
       }
@@ -128,6 +129,7 @@ export function ImportFlow({ plannedDates }: { plannedDates: string[] }) {
         carbs_g: row.carbs ?? est?.carbs ?? null,
         fat_g: row.fat ?? est?.fat ?? null,
         fibre_g: row.fibre ?? est?.fibre ?? null,
+        sugar_g: row.sugar ?? est?.sugar ?? null,
         // AI provenance only when the estimate step produced the numbers.
         ai_confidence: row.kcal === null && est ? est.confidence : null,
       };

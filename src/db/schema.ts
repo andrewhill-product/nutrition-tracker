@@ -47,6 +47,7 @@ export const mealItems = pgTable(
     aiCarbsG: real("ai_carbs_g"),
     aiFatG: real("ai_fat_g"),
     aiFibreG: real("ai_fibre_g"),
+    aiSugarG: real("ai_sugar_g"),
     aiConfidence: real("ai_confidence"),
     verdict: verdictEnum("verdict").notNull(),
     finalGrams: integer("final_grams"),
@@ -55,6 +56,7 @@ export const mealItems = pgTable(
     finalCarbsG: real("final_carbs_g"),
     finalFatG: real("final_fat_g"),
     finalFibreG: real("final_fibre_g"),
+    finalSugarG: real("final_sugar_g"),
   },
   (t) => [index("meal_items_meal_id_idx").on(t.mealId), index("meal_items_verdict_idx").on(t.verdict)]
 );
@@ -66,6 +68,10 @@ export const targets = pgTable("targets", {
   carbsG: integer("carbs_g").notNull(),
   fatG: integer("fat_g").notNull(),
   fibreG: integer("fibre_g").notNull(),
+  // Ceiling, not a goal to reach. Tracks TOTAL sugars (the label's 'of
+  // which sugars'); the UK label reference intake is 90g a day. The NHS 30g
+  // limit is for free sugars, which labels do not declare separately.
+  sugarG: integer("sugar_g").notNull().default(90),
 });
 
 export const calibrationNotes = pgTable("calibration_notes", {

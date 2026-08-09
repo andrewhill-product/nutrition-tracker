@@ -61,6 +61,8 @@ export function ReviewFooter({
           <span className="text-fat">F {fmt(totals.fat, 1)}</span>
           {" · "}
           <span className="text-fibre">Fb {fmt(totals.fibre, 1)}</span>
+          {" · "}
+          <span className="text-sugar">Su {fmt(totals.sugar, 1)}</span>
         </span>
       </div>
       {error && <p className="mb-2 text-sm text-danger">{error}</p>}

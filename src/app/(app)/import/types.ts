@@ -14,6 +14,7 @@ export type Estimate = {
   carbs: number;
   fat: number;
   fibre: number;
+  sugar: number;
   confidence: number;
 };
 
@@ -26,6 +27,7 @@ export type PreviewRow = {
   carbs: number | null;
   fat: number | null;
   fibre: number | null;
+  sugar: number | null;
   included: boolean;
   estimate: Estimate | "failed" | null;
 };
@@ -50,6 +52,7 @@ export function buildRows(sheet: SheetData, map: ColumnMap): PreviewRow[] {
       carbs: parseNumber(cell("carbs")),
       fat: parseNumber(cell("fat")),
       fibre: parseNumber(cell("fibre")),
+      sugar: parseNumber(cell("sugar")),
       included: true,
       estimate: null,
     });

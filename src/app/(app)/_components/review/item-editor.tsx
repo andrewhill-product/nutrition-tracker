@@ -10,6 +10,7 @@ const MACROS: { key: Exclude<MacroKey, "kcal">; label: string }[] = [
   { key: "carbs", label: "Carbs" },
   { key: "fat", label: "Fat" },
   { key: "fibre", label: "Fibre" },
+  { key: "sugar", label: "Sugar" },
 ];
 
 /**

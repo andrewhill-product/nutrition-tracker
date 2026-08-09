@@ -20,6 +20,7 @@ export async function PUT(req: NextRequest) {
     carbsG: body.data.carbs_g,
     fatG: body.data.fat_g,
     fibreG: body.data.fibre_g,
+    sugarG: body.data.sugar_g,
   };
   await db
     .insert(targets)

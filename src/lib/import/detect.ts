@@ -11,7 +11,8 @@ export type ColumnRole =
   | "protein"
   | "carbs"
   | "fat"
-  | "fibre";
+  | "fibre"
+  | "sugar";
 
 export type ColumnMap = Partial<Record<ColumnRole, number>>;
 
@@ -87,6 +88,7 @@ const HEADER_PATTERNS: [ColumnRole, RegExp][] = [
   ["protein", /protein/i],
   ["carbs", /carb/i],
   ["fibre", /fib/i],
+  ["sugar", /sugar/i],
   ["fat", /fat/i],
   ["name", /meal|name|dinner|food|dish|recipe/i],
 ];
