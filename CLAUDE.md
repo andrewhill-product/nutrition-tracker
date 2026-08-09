@@ -12,7 +12,7 @@ Personal nutrition tracker for one user (Andrew). Mobile-first PWA deployed on V
 4. Mobile-first, one-handed use. The primary action is one big camera button.  
 5. All app data lives server-side in Postgres. Never use localStorage for app data.
 
-## Stack
+## Stack (You decide)
 
 - Next.js (App Router), TypeScript strict, Tailwind  
 - Drizzle ORM with Postgres (Neon via the Vercel Marketplace)  
@@ -77,4 +77,5 @@ Manifest, icons, installable, standalone display. No offline sync in v1; show a 
 - Fresh clone, .env.local, db:push, seed, dev gives a fully working app  
 - README.md covers local run plus the exact Vercel handover: import the GitHub repo, create Neon Postgres and a Blob store from the Vercel dashboard Storage tab and connect both to the project, add ANTHROPIC\_API\_KEY and APP\_PASSWORD, redeploy, run db:push  
 - ASSUMPTIONS.md lists every call you made without asking
+- An app that I can have on my phone locally, build for dimensions of a pro max iphone. 
 
