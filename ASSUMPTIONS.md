@@ -1,0 +1,72 @@
+# ASSUMPTIONS
+
+Every call made without asking, grouped by area.
+
+## Build environment
+
+- The app was first built in a cloud session (no `.env.local`, no egress to Neon/Blob/Anthropic; verified against local Postgres with the AI and Blob routes exercised structurally), then recreated file-for-file on this Mac where the populated `.env.local` lives. On this machine the previously untestable pieces were verified live: schema push and seed against the real Neon database, a real Blob upload, analyse text mode (~15s, valid schema, and the seeded rice correction visibly applied in the result), analyse image mode (~7s; a blank photo correctly returns zero items, which the client maps to its "no food found" card), and distil (~10s; with only 3 one-off seed corrections it correctly reported no clear patterns and kept existing rules).
+- SheetJS is installed from the official CDN tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`) as the plan specified; the npm registry `xlsx` package is abandoned at 0.18.5 with known vulnerabilities.
+- `create-next-app` produced Next.js 16.3.0, so the auth gate lives in `src/proxy.ts` (Next 16 renamed middleware to proxy; identical matcher semantics).
+
+## Settled defaults
+
+- Europe/London defines "today"; dates are stored as `YYYY-MM-DD` strings; one photo per meal.
+- Week runs Monday to Sunday; both Today and Week page backwards and forwards.
+- Dark mode follows the system (`prefers-color-scheme`); no in-app toggle.
+- Layout tuned at 430x932 (iPhone Pro Max) with safe-area padding; usable on any phone width.
+
+## Review and the rule 1 gate
+
+- Conversion mode (logging a planned meal) resets every item verdict to unreviewed client-side, so the Save gate applies exactly as for a fresh analysis; the DB placeholder verdict `up` from import is never trusted as a real review. Ordinary edit of a logged meal carries verdicts over.
+- Server-enforced invariants (`resolveFinals`): `up` copies `ai_*` to `final_*` and is rejected when `ai_kcal` is NULL; `edited` requires grams and kcal; `removed` nulls finals but keeps the row. Client-sent finals are never trusted for `up` or `removed`.
+- Saving a meal that stays `planned` ("Save plan") skips `resolveFinals` and stores placeholder verdicts and finals as sent. Rationale: the verdict gate exists to protect logged data; planned meals never count in totals, and conversion re-collects real verdicts. Without this, imported rows lacking an estimate could never be edited while planned.
+- Removed items stay in the save payload and the DB (calibration data). On update, DB rows with verdict `removed` that the client did not send are re-inserted unchanged so calibration history cannot be lost by the client.
+- A manual item (typed name, grams and values) is saved as verdict `edited` with `ai_*` NULL: the human supplied the numbers, so nothing needed accepting.
+- "Estimate macros" on an added item uses analyse text mode and still requires a verdict.
+- Confidence is surfaced only as a "Low confidence" badge below 0.6; raw scores are never shown.
+- When the last non-removed item is removed, Save is replaced by "All items removed. Delete the meal instead?".
+
+## Calibration loop
+
+- Calibration queries require `verdict IN ('edited','removed') AND ai_kcal IS NOT NULL AND ai_confidence IS NOT NULL`, so manual items and spreadsheet-supplied numbers (which leave `ai_confidence` NULL) never feed calibration. "Last 50" therefore means the last 50 AI-estimated corrections.
+- Image mode cannot ILIKE-match item names before the photo is analysed, and CLAUDE.md requires one Claude call per request, so image mode falls back to the 10 most recent corrections. Text mode matches words of 4+ characters from the description (deduped, capped at 8) via ILIKE. This is a spec-internal conflict resolved in favour of one call per request.
+- Distil deactivates old notes rather than deleting them (history retained); deletes from Settings are hard deletes.
+- If distil returns zero rules, existing notes are kept untouched.
+- Seeded corrections are crafted as generically true UK portion facts (cooked rice runs ~250g, wholemeal slices run ~40g each) so they cannot mis-calibrate; deleting the example meals removes their influence.
+
+## AI integration
+
+- Model `claude-fable-5` via `client.beta.messages.create` with `betas: ["server-side-fallback-2026-07-01"]`, `fallbacks: "default"`, `max_tokens: 16000`; `thinking` is never passed (always on; explicit disable is a 400) and neither are temperature or top_p. Analyse runs at effort low, distil at effort medium, both with structured output JSON schemas (no numeric bounds; zod enforces ranges after).
+- `stop_reason` is branched on every call: refusal arrives as HTTP 200 and maps to a friendly in-flow error; truncation likewise.
+- Auto-retry happens once and only on a cheap parse/zod failure; refusal or API errors return immediately so the user's "Try again" is the second model call (avoids stacking two thinking calls against mobile Safari's ~60s fetch abort). Client fetches for analyse/distil carry a 55s AbortController deadline.
+- `claude-fable-5` requires 30-day org data retention (not ZDR); persistent 400s on every request point at retention config (see README troubleshooting).
+- An analysis returning zero items is treated as failure client-side with its own message.
+- `maxDuration = 300` on both AI routes assumes Vercel Fluid compute.
+
+## Data and API
+
+- Totals sum `final_*` where `status='logged' AND verdict <> 'removed'`; planned meals appear only in the planned-vs-actual comparison.
+- Text quick-add saves `source:'manual'`, photo meals `'photo'`, imported dinners `'spreadsheet'`. Re-analysing a planned meal from a fresh photo updates source to `'photo'` (UpdateMeal.source is optional and only sent then).
+- Export is one CSV with three labelled sections (meals x items flat rows including meal_created_at, targets, calibration notes), UTF-8 BOM, CRLF, RFC 4180 quoting. Text cells beginning with a formula trigger character (=, +, -, @) are defused with a leading apostrophe because imported and AI-written names are untrusted and the file targets Excel.
+- Blob photos are public-but-unguessable (random suffix); orphaned photos are kept in v1 (deleting a meal does not delete its Blob).
+- The auth cookie is hex(HMAC-SHA256(key=APP_PASSWORD, msg constant)): deterministic and stateless, so rotating the password signs out every device. 180-day maxAge, httpOnly, sameSite lax, `secure` in production only (so LAN HTTP phone testing works).
+- Login sleeps 750ms on a wrong password.
+
+## Import
+
+- Preview renders as stacked rows for one-handed use, not a wide table.
+- Date parsing: JS Dates (SheetJS `cellDates`), Excel serials (epoch arithmetic, equivalent to `SSF.parse_date_code`), `dd/mm/yyyy` with UK day-first priority, and ISO. Month-first is used only when day-first is impossible.
+- Duplicate dates keep the last row by default, flagged and toggleable; the commit schema rejects duplicates outright.
+- Committing replaces only planned dinners on each date; logged meals are never touched.
+- Rows whose numbers came from the sheet keep `ai_confidence` NULL; only the estimate step sets it (AI provenance). Estimated rows aggregate the analysis items into one meal item, with confidence = the minimum item confidence.
+- Estimate failures stay importable with a "No estimate" chip; those items require full manual entry at log time.
+
+## UI and PWA
+
+- Hand-rolled SVG kcal ring and macro bars; Recharts only for the week chart (client leaf, renders after mount).
+- Hand-written ~40 line service worker: pre-caches `/offline`, network-first navigations. `/offline` is fully self-contained (inline styles) so it renders styled from cache alone.
+- Week averages are taken over days with at least 1 logged meal; macro split uses energy shares at 4/4/9 kcal per gram with fibre shown as grams.
+- Capture drafts live in React memory only (no localStorage, per product rule 5); abandoning a draft costs at most an orphaned Blob upload.
+- Photos are downscaled client-side (longest edge 1600px, JPEG 0.8) before a background Blob client upload during slot picking; an undecodable photo (e.g. HEIC on a browser that cannot read it) gets a dedicated error card and is never uploaded raw.
+- The planned dinner camera icon deep-links to `/?date=<date>&capture=photo&slot=dinner&convert=<mealId>`: the capture flow opens with Dinner pre-selected (the slot picker is still shown), and the resulting review is a conversion of that planned meal, so Save issues a PUT that logs the plan with source updated to photo, rather than creating a duplicate meal. The deep link fires per navigation (cancelling strips the query params so a repeat tap works), and it opens the action sheet as well as attempting the camera directly, since some browsers block a programmatic camera open outside a user gesture.
+- "Enter by hand" from an error card never infers the slot: if no slot was picked before the error, it routes through the slot picker (button reads Continue) before opening the empty review.

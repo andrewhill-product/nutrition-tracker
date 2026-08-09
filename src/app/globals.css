@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --line: #e4e4e7;
+  --ink: #18181b;
+  --muted: #71717a;
+  --primary: #4f46e5;
+  --primary-soft: #eef2ff;
+  --on-primary: #ffffff;
+  --protein: #0891b2;
+  --carbs: #d97706;
+  --fat: #e11d48;
+  --fibre: #059669;
+  --danger: #dc2626;
+  --amber-soft: #fef3c7;
+  --amber-ink: #92400e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface-2: #27272a;
+    --line: #3f3f46;
+    --ink: #fafafa;
+    --muted: #a1a1aa;
+    --primary: #6366f1;
+    --primary-soft: #1e1b4b;
+    --on-primary: #ffffff;
+    --protein: #22d3ee;
+    --carbs: #fbbf24;
+    --fat: #fb7185;
+    --fibre: #34d399;
+    --danger: #f87171;
+    --amber-soft: #451a03;
+    --amber-ink: #fcd34d;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
+  --color-fibre: var(--fibre);
+  --color-danger: var(--danger);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-ink: var(--amber-ink);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@keyframes pulse-once {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.pulse-once {
+  animation: pulse-once 0.25s ease-in-out;
+}
