@@ -9,7 +9,7 @@ import type { MacroTotals } from "./totals";
  */
 
 export type GoalKey = "kcal" | "protein" | "carbs" | "fat" | "fibre" | "sugar";
-export type Direction = "ceiling" | "floor";
+export type Direction = "ceiling" | "floor" | "band";
 export type GoalStatus = "hit" | "near" | "off";
 export type DayState = "empty" | "incomplete" | "on-track" | "near-miss" | "off-track";
 
@@ -23,10 +23,10 @@ export type GoalMeta = {
 };
 
 export const GOALS: GoalMeta[] = [
-  { key: "kcal", label: "Calories", unit: "kcal", direction: "ceiling", colorText: "text-primary", colorBg: "bg-primary" },
+  { key: "kcal", label: "Calories", unit: "kcal", direction: "band", colorText: "text-primary", colorBg: "bg-primary" },
   { key: "protein", label: "Protein", unit: "g", direction: "floor", colorText: "text-protein", colorBg: "bg-protein" },
-  { key: "carbs", label: "Carbs", unit: "g", direction: "ceiling", colorText: "text-carbs", colorBg: "bg-carbs" },
-  { key: "fat", label: "Fat", unit: "g", direction: "ceiling", colorText: "text-fat", colorBg: "bg-fat" },
+  { key: "carbs", label: "Carbs", unit: "g", direction: "band", colorText: "text-carbs", colorBg: "bg-carbs" },
+  { key: "fat", label: "Fat", unit: "g", direction: "band", colorText: "text-fat", colorBg: "bg-fat" },
   { key: "fibre", label: "Fibre", unit: "g", direction: "floor", colorText: "text-fibre", colorBg: "bg-fibre" },
   { key: "sugar", label: "Sugar", unit: "g", direction: "ceiling", colorText: "text-sugar", colorBg: "bg-sugar" },
 ];
@@ -54,9 +54,11 @@ export function goalTarget(targets: Targets, key: GoalKey): number {
 }
 
 /**
- * Ceilings: hit at or under 105% of the limit, near-miss to 125%, off beyond
- * (Andrew wants a 25% overrun treated as serious). Floors: hit at or above
- * 90% of the target, near-miss from 75%, off below.
+ * Bands (calories, carbs, fat): the green zone is 90% to 105% of target,
+ * near-miss from 75% under or to 125% over, off beyond either. Ceilings
+ * (sugar): green anywhere at or under 105% of the limit, near-miss to 125%,
+ * off beyond (a 25% overrun is serious). Floors (protein, fibre): green from
+ * 90%, near-miss from 75%, off below; exceeding a floor never penalises.
  */
 export function goalStatus(direction: Direction, value: number, target: number): GoalStatus {
   if (target <= 0) return "hit";
@@ -64,6 +66,11 @@ export function goalStatus(direction: Direction, value: number, target: number):
   if (direction === "ceiling") {
     if (ratio <= 1.05) return "hit";
     if (ratio <= 1.25) return "near";
+    return "off";
+  }
+  if (direction === "band") {
+    if (ratio >= 0.9 && ratio <= 1.05) return "hit";
+    if (ratio >= 0.75 && ratio <= 1.25) return "near";
     return "off";
   }
   if (ratio >= 0.9) return "hit";
@@ -84,7 +91,7 @@ export function dayState(
 ): DayState {
   if (loggedMealCount === 0) return "empty";
   if (loggedMealCount < 2 || totals.kcal < targets.kcal * 0.5) return "incomplete";
-  const kcal = goalStatus("ceiling", totals.kcal, targets.kcal);
+  const kcal = goalStatus("band", totals.kcal, targets.kcal);
   const protein = goalStatus("floor", totals.protein_g, targets.proteinG);
   if (kcal === "off" || protein === "off") return "off-track";
   if (kcal === "hit" && protein === "hit") return "on-track";

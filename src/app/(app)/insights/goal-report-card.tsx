@@ -17,10 +17,14 @@ function headline(state: DayState, totals: MacroTotals, targets: Targets): strin
   if (state === "incomplete") return "Log the rest of today to score it.";
   if (state === "on-track") return "On track today.";
   if (state === "near-miss") return "Close today.";
-  const kcalOff = goalStatus("ceiling", totals.kcal, targets.kcal) === "off";
+  const kcalOff = goalStatus("band", totals.kcal, targets.kcal) === "off";
+  const kcalOver = totals.kcal > targets.kcal;
   const proteinOff = goalStatus("floor", totals.protein_g, targets.proteinG) === "off";
-  if (kcalOff && proteinOff) return "Over on calories and short on protein today.";
-  if (kcalOff) return "Over the calorie budget today.";
+  if (kcalOff && proteinOff)
+    return kcalOver
+      ? "Over on calories and short on protein today."
+      : "Short on calories and protein today.";
+  if (kcalOff) return kcalOver ? "Over the calorie budget today." : "Well short on calories today.";
   return "Short on protein today.";
 }
 
@@ -59,16 +63,25 @@ export function GoalReportCard({
           const tickPct = (target / scaleMax) * 100;
           const basePct = (Math.min(value, target) / scaleMax) * 100;
           const overPct = (Math.max(0, value - target) / scaleMax) * 100;
-          const floorReached = goal.direction === "floor" && value >= target;
+          const tickStrong =
+            (goal.direction === "floor" && value >= target) ||
+            (goal.direction === "band" && status === "hit");
 
+          const unitLabel = goal.unit === "kcal" ? " kcal" : "g";
           const sub =
             goal.direction === "ceiling"
               ? value > target
-                ? `${fmt(value - target)}${goal.unit === "kcal" ? " kcal" : "g"} over the ${goal.unit === "kcal" ? "budget" : "limit"}`
-                : `${fmt(target - value)}${goal.unit === "kcal" ? " kcal" : "g"} left of ${fmt(target)}`
-              : value >= target
-                ? `Reached ${fmt(target)}${goal.unit}`
-                : `${fmt(target - value)}${goal.unit} to go`;
+                ? `${fmt(value - target)}${unitLabel} over the limit`
+                : `${fmt(target - value)}${unitLabel} left of ${fmt(target)}`
+              : goal.direction === "band"
+                ? value > target * 1.05
+                  ? `${fmt(value - target)}${unitLabel} over the budget`
+                  : value >= target * 0.9
+                    ? `In the green zone (90 to 105% of ${fmt(target)})`
+                    : `${fmt(Math.ceil(target * 0.9 - value))}${unitLabel} to the green zone`
+                : value >= target
+                  ? `Reached ${fmt(target)}${goal.unit}`
+                  : `${fmt(target - value)}${goal.unit} to go`;
 
           return (
             <div key={goal.key}>
@@ -84,23 +97,23 @@ export function GoalReportCard({
                   className={`absolute inset-y-0 left-0 rounded-full ${goal.colorBg}`}
                   style={{ width: `${basePct}%` }}
                 />
-                {goal.direction === "ceiling" && overPct > 0 && (
+                {goal.direction !== "floor" && overPct > 0 && (
                   <div
                     className={`absolute inset-y-0 ${status === "off" ? "bg-danger" : "bg-carbs/80"}`}
                     style={{ left: `${tickPct}%`, width: `${overPct}%` }}
                   />
                 )}
                 <div
-                  className={`absolute inset-y-0 w-0.5 ${floorReached ? "bg-ink" : "bg-muted/70"}`}
+                  className={`absolute inset-y-0 w-0.5 ${tickStrong ? "bg-ink" : "bg-muted/70"}`}
                   style={{ left: `${tickPct}%` }}
                   aria-hidden
                 />
               </div>
               <p
                 className={`tnum mt-0.5 text-xs ${
-                  goal.direction === "ceiling" && status === "off"
+                  goal.direction !== "floor" && status === "off" && value > target
                     ? "font-medium text-danger"
-                    : goal.direction === "ceiling" && status === "near"
+                    : goal.direction !== "floor" && value > target * 1.05
                       ? "font-medium text-amber-ink"
                       : "text-muted"
                 }`}

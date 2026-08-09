@@ -1,6 +1,6 @@
-import { GOALS } from "@/lib/goals";
+import { GOALS, type Direction } from "@/lib/goals";
 
-export type HitRate = { key: string; label: string; direction: "ceiling" | "floor"; hit: number };
+export type HitRate = { key: string; label: string; direction: Direction; hit: number };
 
 /**
  * Per-goal hit rate over scored days only, with the denominator always
@@ -32,7 +32,11 @@ export function GoalHitRates({ rates, scored }: { rates: HitRate[]; scored: numb
                 <span className="font-medium">
                   {rate.label}
                   <span className="ml-1.5 text-muted">
-                    {rate.direction === "ceiling" ? "stayed under" : "reached"}
+                    {rate.direction === "ceiling"
+                      ? "stayed under"
+                      : rate.direction === "band"
+                        ? "in the green zone"
+                        : "reached"}
                   </span>
                 </span>
                 <span className="tnum text-muted">
