@@ -1,5 +1,9 @@
-import type { CalibrationNote, MealItem } from "@/db/schema";
-import { formatCorrection, type CorrectionWithMeal } from "@/lib/calibration";
+import type { CalibrationNote, DiscardedAnalysis, MealItem } from "@/db/schema";
+import {
+  formatCorrection,
+  formatDiscard,
+  type CorrectionWithMeal,
+} from "@/lib/calibration";
 
 export function buildAnalyseSystem(
   notes: CalibrationNote[],
@@ -13,6 +17,7 @@ export function buildAnalyseSystem(
       "If the photo shows food packaging or a nutrition label, read the product name, portion size and stated values from the pack and use them in preference to visual estimation, converting per-100g figures to the portion eaten; label-read values deserve high confidence.",
       "sugar_g is total sugars (the label's 'of which sugars' figure).",
       "Name prepared drinks and dishes as what they are: a latte is one item called latte, not espresso plus foamed milk; a sandwich made from visible parts may be split, but a recognisable prepared item is named as itself.",
+      "For items naturally eaten by count (eggs, sausages, slices of toast, biscuits, fish fingers, rashers), set count to how many and unit to a single singular word ('egg', 'slice', 'sausage'); grams stays the total cooked weight of all of them. For weighed or poured foods set count and unit to null.",
       "Use British English throughout, food names and the notes field alike (analyse, fibre).",
       "Give each item a confidence between 0 and 1.",
       "Return JSON only matching the requested schema. No prose, no code fences.",
@@ -37,18 +42,32 @@ export const DISTIL_SYSTEM = [
   "You distil a UK user's food-logging corrections into calibration rules for a nutrition estimator.",
   "Write at most 10 one-sentence rules in British English.",
   "Each rule must be concrete and quantitative, like: Rice portions run about 250g cooked, not 180g.",
+  "Binned analyses show identification mistakes rather than portion mistakes; where they repeat, write an identification rule instead, like: Folded egg dishes are usually omelettes, not scrambled eggs.",
   "Only write a rule where repeated corrections support a clear pattern; fewer good rules beat many weak ones.",
   "If no clear patterns exist, return an empty list.",
   "Return JSON only matching the requested schema. No prose, no code fences.",
 ].join(" ");
 
-export function buildDistilUser(corrections: CorrectionWithMeal[]): string {
-  return (
-    "Here are the user's recent corrections, newest first:\n" +
-    corrections
-      .map(
-        (c) => `- In "${c.mealName}" (${c.mealDate}): ${formatCorrection(c.item)}`
-      )
-      .join("\n")
-  );
+export function buildDistilUser(
+  corrections: CorrectionWithMeal[],
+  discards: DiscardedAnalysis[]
+): string {
+  const parts: string[] = [];
+  if (corrections.length > 0) {
+    parts.push(
+      "Here are the user's recent corrections, newest first:\n" +
+        corrections
+          .map(
+            (c) => `- In "${c.mealName}" (${c.mealDate}): ${formatCorrection(c.item)}`
+          )
+          .join("\n")
+    );
+  }
+  if (discards.length > 0) {
+    parts.push(
+      "Analyses the user binned outright, newest first:\n" +
+        discards.map((d) => `- ${formatDiscard(d)}`).join("\n")
+    );
+  }
+  return parts.join("\n\n");
 }

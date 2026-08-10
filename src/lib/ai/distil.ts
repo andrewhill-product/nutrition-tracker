@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { calibrationNotes, type CalibrationNote } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getCorrectionsForDistil } from "@/lib/calibration";
+import { getCorrectionsForDistil, getDiscardsForDistil } from "@/lib/calibration";
 import { callClaudeJson, DISTIL_MODEL, stripFences } from "./client";
 import { DISTIL_JSON_SCHEMA } from "./jsonSchemas";
 import { buildDistilUser, DISTIL_SYSTEM } from "./prompts";
@@ -20,8 +20,11 @@ const FRIENDLY_FAILURE =
   "Sorry, updating the calibration did not work. Please try again.";
 
 export async function runDistil(): Promise<DistilOutcome> {
-  const corrections = await getCorrectionsForDistil();
-  if (corrections.length === 0) {
+  const [corrections, discards] = await Promise.all([
+    getCorrectionsForDistil(),
+    getDiscardsForDistil(),
+  ]);
+  if (corrections.length === 0 && discards.length === 0) {
     return {
       status: 400,
       body: { ok: false, error: "No corrections yet. Review a few meals first." },
@@ -29,7 +32,10 @@ export async function runDistil(): Promise<DistilOutcome> {
   }
 
   const messages = [
-    { role: "user", content: [{ type: "text", text: buildDistilUser(corrections) }] },
+    {
+      role: "user",
+      content: [{ type: "text", text: buildDistilUser(corrections, discards) }],
+    },
   ];
 
   let rules: string[] | null = null;

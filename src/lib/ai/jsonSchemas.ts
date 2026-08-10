@@ -16,6 +16,8 @@ export const ANALYSIS_JSON_SCHEMA = {
         required: [
           "name",
           "portion_desc",
+          "count",
+          "unit",
           "grams",
           "kcal",
           "protein_g",
@@ -28,6 +30,8 @@ export const ANALYSIS_JSON_SCHEMA = {
         properties: {
           name: { type: "string" },
           portion_desc: { type: "string" },
+          count: { type: ["number", "null"] },
+          unit: { type: ["string", "null"] },
           grams: { type: "integer" },
           kcal: { type: "integer" },
           protein_g: { type: "number" },

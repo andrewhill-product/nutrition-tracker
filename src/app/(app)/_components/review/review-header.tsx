@@ -2,11 +2,11 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
 import { formatShort } from "@/lib/dates";
 import type { Slot } from "@/lib/schemas";
 import { SLOT_LABELS } from "@/lib/slots";
 
+/** The close button only requests closing; the screen owns the confirm. */
 export function ReviewHeader({
   name,
   slot,
@@ -24,39 +24,17 @@ export function ReviewHeader({
   onNameChange: (name: string) => void;
   onClose: () => void;
 }) {
-  const [confirmClose, setConfirmClose] = useState(false);
-
   return (
     <header className="space-y-3">
       <div className="flex items-center justify-between">
-        {confirmClose ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted">Discard changes?</span>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-11 rounded-full px-3 text-sm font-semibold text-danger"
-            >
-              Discard
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmClose(false)}
-              className="h-11 rounded-full px-3 text-sm font-semibold text-primary"
-            >
-              Keep reviewing
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => setConfirmClose(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface2 text-xl"
-          >
-            ✕
-          </button>
-        )}
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface2 text-xl"
+        >
+          ✕
+        </button>
         <div className="flex gap-2 text-sm">
           <span className="rounded-full bg-surface2 px-3 py-1.5 font-medium">
             {SLOT_LABELS[slot]}

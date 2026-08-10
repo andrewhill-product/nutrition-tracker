@@ -41,9 +41,13 @@ export async function runAnalyse(req: AnalyseRequestT): Promise<AnalyseOutcome> 
                 : []),
               {
                 type: "text",
-                text: req.labelUrl
-                  ? "The first photo is the meal; the second is the packaging nutrition label. Work out whether the label states values per 100g, per portion or per pack, then scale them to what is actually shown in the meal photo: a whole ready meal uses the per-pack figures, a served portion of meat or cereal scales from per-100g by the visible amount. Label-derived values deserve high confidence."
-                  : "Estimate the food items and portions in this meal photo.",
+                text:
+                  (req.labelUrl
+                    ? "The first photo is the meal; the second is the packaging nutrition label. Work out whether the label states values per 100g, per portion or per pack, then scale them to what is actually shown in the meal photo: a whole ready meal uses the per-pack figures, a served portion of meat or cereal scales from per-100g by the visible amount. Label-derived values deserve high confidence."
+                    : "Estimate the food items and portions in this meal photo.") +
+                  (req.hint
+                    ? ` Andrew has already identified this meal: ${req.hint}. Treat his identification as ground truth for what the items are; use the photo only to size the portions.`
+                    : ""),
               },
             ],
           },

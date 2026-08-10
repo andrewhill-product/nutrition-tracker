@@ -78,8 +78,10 @@ export function AddItemCard({
     onAdd({
       key: nextKey(),
       name: name.trim(),
+      unit: null,
       ai: {
         portionDesc: null,
+        count: null,
         grams: null,
         kcal: null,
         protein: null,
@@ -92,6 +94,7 @@ export function AddItemCard({
       // A manual entry is the human's own numbers: verdict "edited".
       verdict: "edited",
       final: {
+        count: null,
         grams: gramsNum,
         kcal: Math.round(kcalNum),
         protein: num(protein),

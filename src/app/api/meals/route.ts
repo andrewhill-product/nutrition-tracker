@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
         resolved.map((i) => ({
           mealId: created.id,
           name: i.name,
+          unit: i.unit ?? null,
           aiPortionDesc: i.ai_portion_desc ?? null,
+          aiCount: i.ai_count ?? null,
           aiGrams: i.ai_grams ?? null,
           aiKcal: i.ai_kcal ?? null,
           aiProteinG: i.ai_protein_g ?? null,
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest) {
           aiSugarG: i.ai_sugar_g ?? null,
           aiConfidence: i.ai_confidence ?? null,
           verdict: i.verdict,
+          finalCount: i.final_count ?? null,
           finalGrams: i.final_grams ?? null,
           finalKcal: i.final_kcal ?? null,
           finalProteinG: i.final_protein_g ?? null,

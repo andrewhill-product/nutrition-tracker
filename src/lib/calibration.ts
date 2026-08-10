@@ -1,6 +1,12 @@
 import { and, desc, eq, ilike, inArray, isNotNull, or } from "drizzle-orm";
 import { db } from "@/db";
-import { mealItems, meals, type MealItem } from "@/db/schema";
+import {
+  discardedAnalyses,
+  mealItems,
+  meals,
+  type DiscardedAnalysis,
+  type MealItem,
+} from "@/db/schema";
 
 /**
  * Only AI-estimated corrections feed calibration. Spreadsheet-supplied and
@@ -85,6 +91,24 @@ function describeFinal(item: MealItem): string {
     .filter(Boolean)
     .join(", ");
   return `${grams} (${macros})`;
+}
+
+/** Distil input: the last 15 analyses binned from the review screen. */
+export async function getDiscardsForDistil(): Promise<DiscardedAnalysis[]> {
+  return db
+    .select()
+    .from(discardedAnalyses)
+    .orderBy(desc(discardedAnalyses.id))
+    .limit(15);
+}
+
+/** A binned analysis, with Andrew's account of the meal when he gave one. */
+export function formatDiscard(d: DiscardedAnalysis): string {
+  const what = d.source === "text" ? "A typed description" : "A photo";
+  const base = `${what} was analysed as "${d.aiMealName}" (${d.aiItemsSummary}); Andrew binned the whole analysis`;
+  return d.note
+    ? `${base} and said it was actually: ${d.note}.`
+    : `${base} without saying what it was.`;
 }
 
 /** "AI estimated X, Andrew corrected to Y" / "AI suggested X; Andrew removed it entirely". */

@@ -18,6 +18,10 @@ export type Verdict = z.infer<typeof VerdictEnum>;
 export const AnalysisItem = z.object({
   name: z.string().min(1),
   portion_desc: z.string(),
+  // Naturally counted items ("2 eggs"): how many, and the singular unit
+  // word ("egg", "slice"). Both null for weighed foods.
+  count: z.number().min(0).nullish().default(null),
+  unit: z.string().nullish().default(null),
   grams: z.number().int().min(0),
   kcal: z.number().int().min(0),
   protein_g: z.number().min(0),
@@ -42,6 +46,9 @@ export const AnalyseRequest = z.discriminatedUnion("mode", [
     imageUrl: z.url(),
     // Optional second photo of the packaging nutrition label.
     labelUrl: z.url().nullish().default(null),
+    // Re-analyse path: what Andrew says the meal is. Treated as ground truth
+    // for identification; the photo only sizes the portions.
+    hint: z.string().max(500).nullish().default(null),
   }),
   z.object({ mode: z.literal("text"), description: z.string().min(1).max(2000) }),
 ]);
@@ -50,7 +57,9 @@ export type AnalyseRequestT = z.infer<typeof AnalyseRequest>;
 export const MealItemInput = z.object({
   id: z.number().int().positive().optional(),
   name: z.string().min(1),
+  unit: z.string().max(50).nullish().default(null),
   ai_portion_desc: z.string().nullish().default(null),
+  ai_count: z.number().min(0).nullish().default(null),
   ai_grams: z.number().int().min(0).nullish().default(null),
   ai_kcal: z.number().int().min(0).nullish().default(null),
   ai_protein_g: z.number().min(0).nullish().default(null),
@@ -60,6 +69,7 @@ export const MealItemInput = z.object({
   ai_sugar_g: z.number().min(0).nullish().default(null),
   ai_confidence: z.number().min(0).max(1).nullish().default(null),
   verdict: VerdictEnum,
+  final_count: z.number().min(0).nullish().default(null),
   final_grams: z.number().int().min(0).nullish().default(null),
   final_kcal: z.number().int().min(0).nullish().default(null),
   final_protein_g: z.number().min(0).nullish().default(null),
@@ -158,6 +168,14 @@ export type ImportCommitT = z.infer<typeof ImportCommit>;
 
 export const LoginInput = z.object({ password: z.string().min(1) });
 
+export const DiscardInput = z.object({
+  source: z.enum(["photo", "text"]).default("photo"),
+  ai_meal_name: z.string().min(1).max(200),
+  ai_items_summary: z.string().min(1).max(2000),
+  note: z.string().max(500).nullish().default(null),
+});
+export type DiscardInputT = z.infer<typeof DiscardInput>;
+
 export const RepeatInput = z.object({
   name: z.string().min(1).max(200),
   slot: SlotEnum,
@@ -200,6 +218,7 @@ export function resolveFinals(item: MealItemInputT): MealItemInputT {
       }
       return {
         ...item,
+        final_count: item.ai_count ?? null,
         final_grams: item.ai_grams ?? null,
         final_kcal: item.ai_kcal,
         final_protein_g: item.ai_protein_g ?? null,
@@ -224,6 +243,7 @@ export function resolveFinals(item: MealItemInputT): MealItemInputT {
     case "removed":
       return {
         ...item,
+        final_count: null,
         final_grams: null,
         final_kcal: null,
         final_protein_g: null,

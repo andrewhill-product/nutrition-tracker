@@ -41,7 +41,10 @@ export async function PUT(
 
       // Replace-all items, but preserve calibration history the client did not
       // send: DB rows already marked "removed" that are absent from the
-      // payload are re-inserted unchanged.
+      // payload are re-inserted unchanged, and absent AI-estimated "edited"
+      // rows (a re-analysis replaced the whole item list) are demoted to
+      // "removed" so their corrections keep feeding calibration without
+      // counting in totals.
       const oldItems = await tx.select().from(mealItems).where(eq(mealItems.mealId, id));
       const sentIds = new Set(
         body.data.items.map((i) => i.id).filter((v): v is number => v !== undefined)
@@ -49,6 +52,25 @@ export async function PUT(
       const preservedRemoved = oldItems.filter(
         (i) => i.verdict === "removed" && !sentIds.has(i.id)
       );
+      const demotedEdited = oldItems
+        .filter(
+          (i) =>
+            i.verdict === "edited" &&
+            i.aiConfidence !== null &&
+            !sentIds.has(i.id)
+        )
+        .map((row) => ({
+          ...row,
+          verdict: "removed" as const,
+          finalCount: null,
+          finalGrams: null,
+          finalKcal: null,
+          finalProteinG: null,
+          finalCarbsG: null,
+          finalFatG: null,
+          finalFibreG: null,
+          finalSugarG: null,
+        }));
 
       await tx.delete(mealItems).where(eq(mealItems.mealId, id));
       await tx
@@ -67,7 +89,9 @@ export async function PUT(
         ...resolved.map((i) => ({
           mealId: id,
           name: i.name,
+          unit: i.unit ?? null,
           aiPortionDesc: i.ai_portion_desc ?? null,
+          aiCount: i.ai_count ?? null,
           aiGrams: i.ai_grams ?? null,
           aiKcal: i.ai_kcal ?? null,
           aiProteinG: i.ai_protein_g ?? null,
@@ -77,6 +101,7 @@ export async function PUT(
           aiSugarG: i.ai_sugar_g ?? null,
           aiConfidence: i.ai_confidence ?? null,
           verdict: i.verdict,
+          finalCount: i.final_count ?? null,
           finalGrams: i.final_grams ?? null,
           finalKcal: i.final_kcal ?? null,
           finalProteinG: i.final_protein_g ?? null,
@@ -85,10 +110,12 @@ export async function PUT(
           finalFibreG: i.final_fibre_g ?? null,
           finalSugarG: i.final_sugar_g ?? null,
         })),
-        ...preservedRemoved.map((row) => ({
+        ...[...preservedRemoved, ...demotedEdited].map((row) => ({
           mealId: row.mealId,
           name: row.name,
+          unit: row.unit,
           aiPortionDesc: row.aiPortionDesc,
+          aiCount: row.aiCount,
           aiGrams: row.aiGrams,
           aiKcal: row.aiKcal,
           aiProteinG: row.aiProteinG,
@@ -98,6 +125,7 @@ export async function PUT(
           aiSugarG: row.aiSugarG,
           aiConfidence: row.aiConfidence,
           verdict: row.verdict,
+          finalCount: row.finalCount,
           finalGrams: row.finalGrams,
           finalKcal: row.finalKcal,
           finalProteinG: row.finalProteinG,

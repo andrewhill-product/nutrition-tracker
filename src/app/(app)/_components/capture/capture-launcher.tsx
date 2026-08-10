@@ -254,11 +254,21 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
     return { ...draft, mode: "conversion", mealId: convertId, status: "planned" };
   }
 
-  async function analyse() {
+  /**
+   * `noteOverride` is the discard-with-note path: the binned photo analysis
+   * relaunches as a text analysis of Andrew's own description, and the meal
+   * still carries the original photo via photoUrlRef.
+   */
+  async function analyse(noteOverride?: string) {
+    // Guard against being wired as a DOM event handler: only a string counts.
+    if (typeof noteOverride !== "string") noteOverride = undefined;
     cancelledRef.current = false;
     setState({ step: "analysing" });
+    const isPhoto = noteOverride === undefined && kind === "photo";
     let body: object;
-    if (kind === "photo") {
+    if (noteOverride !== undefined) {
+      body = { mode: "text", description: noteOverride };
+    } else if (isPhoto) {
       try {
         const url = photoUrlRef.current ?? (await uploadRef.current);
         if (!url) throw new Error("no-upload");
@@ -289,10 +299,9 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
     if (res.data.items.length === 0) {
       setState({
         step: "error",
-        message:
-          kind === "photo"
-            ? "Claude could not find any food in this photo. Try a clearer shot, or enter the meal by hand."
-            : "Claude could not find any food in that description. Try rewording it, or enter the meal by hand.",
+        message: isPhoto
+          ? "Claude could not find any food in this photo. Try a clearer shot, or enter the meal by hand."
+          : "Claude could not find any food in that description. Try rewording it, or enter the meal by hand.",
         retryable: true,
       });
       return;
@@ -303,7 +312,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
         draftFromAnalysis(res.data, {
           date,
           slot: effectiveSlot ?? "snack",
-          source: kind === "photo" ? "photo" : "manual",
+          source: isPhoto ? "photo" : "manual",
           photoUrl: photoUrlRef.current,
         })
       ),
@@ -440,7 +449,16 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
         <div className="fixed inset-0 z-40 overflow-y-auto bg-bg">
           <div className="safe-top mx-auto w-full max-w-lg">
             {state.step === "review" ? (
-              <ReviewScreen draft={state.draft} onClose={reset} onSaved={onSaved} />
+              <ReviewScreen
+                draft={state.draft}
+                onClose={reset}
+                onSaved={onSaved}
+                onDiscardWithNote={(note) => {
+                  setKind("text");
+                  setDescription(note);
+                  void analyse(note);
+                }}
+              />
             ) : (
               <div className="px-4 py-6">
                 {state.step === "text" && (
@@ -467,7 +485,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                     }
                     actionLabel={manualPending ? "Continue" : "Analyse"}
                     onSlotChange={setSlot}
-                    onAnalyse={manualPending ? openManualReview : analyse}
+                    onAnalyse={manualPending ? openManualReview : () => analyse()}
                     onCancel={reset}
                   />
                 )}
@@ -510,7 +528,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                 {state.step === "error" && (
                   <ErrorCard
                     message={state.message}
-                    onRetry={state.retryable ? analyse : undefined}
+                    onRetry={state.retryable ? () => analyse() : undefined}
                     onManual={enterByHand}
                     onCancel={reset}
                   />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Stepper } from "../ui/stepper";
 import { ItemEditor } from "./item-editor";
 import { RemovedItemRow } from "./removed-item-row";
 import { scaleFinals, type ReviewItem } from "./types";
@@ -48,6 +49,7 @@ export function ItemCard({
       ...item,
       verdict: "up",
       final: {
+        count: item.ai.count,
         grams: item.ai.grams,
         kcal: item.ai.kcal,
         protein: item.ai.protein,
@@ -76,6 +78,56 @@ export function ItemCard({
   function remove() {
     setEditing(false);
     onChange({ ...item, verdict: "removed" });
+  }
+
+  const countable =
+    item.unit !== null &&
+    item.ai.count !== null &&
+    item.ai.count > 0 &&
+    item.ai.grams !== null &&
+    item.ai.grams > 0;
+
+  /**
+   * The count stepper is a fast edit: 2 eggs to 3 scales grams and every
+   * unpinned macro by 1.5. It always lands on whole counts (a grams tweak can
+   * leave 2.1 eggs; the next tap snaps to 3, not 3.1). Stepping back to the
+   * AI's own count restores the full AI baseline and returns the item to
+   * unreviewed rather than pretending it was hand-edited.
+   */
+  function setCount(raw: number) {
+    if (!countable) return;
+    const count = Math.max(1, Math.round(raw));
+    if (count === item.ai.count) {
+      onChange({
+        ...item,
+        verdict: null,
+        overridden: {},
+        final: {
+          count: item.ai.count,
+          grams: item.ai.grams,
+          kcal: item.ai.kcal,
+          protein: item.ai.protein,
+          carbs: item.ai.carbs,
+          fat: item.ai.fat,
+          fibre: item.ai.fibre,
+          sugar: item.ai.sugar,
+        },
+      });
+      return;
+    }
+    const grams = Math.round((item.ai.grams! * count) / item.ai.count!);
+    onChange({
+      ...item,
+      verdict: "edited",
+      final: { ...scaleFinals(item, grams), count },
+    });
+  }
+
+  /** "egg" to "eggs", "sandwich" to "sandwiches", "pastry" to "pastries". */
+  function plural(unit: string): string {
+    if (/(s|x|ch|sh)$/.test(unit)) return `${unit}es`;
+    if (/[^aeiou]y$/.test(unit)) return `${unit.slice(0, -1)}ies`;
+    return `${unit}s`;
   }
 
   const verdictBtn =
@@ -120,6 +172,20 @@ export function ItemCard({
         {" · "}
         <span className="text-sugar">Su {fmt(item.final.sugar, 1)}g</span>
       </p>
+
+      {countable && !editing && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted">How many {plural(item.unit!)}?</span>
+          <Stepper
+            value={item.final.count ?? item.ai.count!}
+            onChange={setCount}
+            step={1}
+            min={1}
+            max={50}
+            unit=""
+          />
+        </div>
+      )}
 
       {editing ? (
         <ItemEditor item={item} onChange={onChange} onDone={doneEditing} />

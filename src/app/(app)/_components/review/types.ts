@@ -12,6 +12,7 @@ export type MacroKey = "kcal" | "protein" | "carbs" | "fat" | "fibre" | "sugar";
 
 export type AiValues = {
   portionDesc: string | null;
+  count: number | null;
   grams: number | null;
   kcal: number | null;
   protein: number | null;
@@ -23,6 +24,7 @@ export type AiValues = {
 };
 
 export type FinalValues = {
+  count: number | null;
   grams: number | null;
   kcal: number | null;
   protein: number | null;
@@ -36,6 +38,8 @@ export type ReviewItem = {
   key: string;
   dbId?: number;
   name: string;
+  /** Singular count unit ("egg", "slice") for countable items, else null. */
+  unit: string | null;
   ai: AiValues;
   /** null = not yet reviewed; the Save gate requires every verdict set. */
   verdict: Verdict | null;
@@ -71,8 +75,10 @@ export function itemFromAnalysis(a: AnalysisItemT): ReviewItem {
   return {
     key: nextKey(),
     name: a.name,
+    unit: a.unit ?? null,
     ai: {
       portionDesc: a.portion_desc,
+      count: a.count ?? null,
       grams: a.grams,
       kcal: a.kcal,
       protein: a.protein_g,
@@ -84,6 +90,7 @@ export function itemFromAnalysis(a: AnalysisItemT): ReviewItem {
     },
     verdict: null,
     final: {
+      count: a.count ?? null,
       grams: a.grams,
       kcal: a.kcal,
       protein: a.protein_g,
@@ -150,8 +157,10 @@ export function draftFromMeal(
       key: nextKey(),
       dbId: item.id,
       name: item.name,
+      unit: item.unit,
       ai: {
         portionDesc: item.aiPortionDesc,
+        count: item.aiCount,
         grams: item.aiGrams,
         kcal: item.aiKcal,
         protein: item.aiProteinG,
@@ -167,6 +176,7 @@ export function draftFromMeal(
       final:
         item.verdict === "removed" || mode === "conversion"
           ? {
+              count: item.finalCount ?? item.aiCount,
               grams: item.finalGrams ?? item.aiGrams,
               kcal: item.finalKcal ?? item.aiKcal,
               protein: item.finalProteinG ?? item.aiProteinG,
@@ -176,6 +186,7 @@ export function draftFromMeal(
               sugar: item.finalSugarG ?? item.aiSugarG,
             }
           : {
+              count: item.finalCount,
               grams: item.finalGrams,
               kcal: item.finalKcal,
               protein: item.finalProteinG,
@@ -199,6 +210,7 @@ export function scaleFinals(item: ReviewItem, grams: number): FinalValues {
   if (!ai.grams || ai.grams <= 0) return { ...final, grams };
   const factor = grams / ai.grams;
   return {
+    count: ai.count !== null ? round1(ai.count * factor) : final.count,
     grams,
     kcal: overridden.kcal
       ? final.kcal
@@ -260,7 +272,9 @@ export function liveTotals(items: ReviewItem[]): LiveTotals {
 type PayloadItem = {
   id?: number;
   name: string;
+  unit: string | null;
   ai_portion_desc: string | null;
+  ai_count: number | null;
   ai_grams: number | null;
   ai_kcal: number | null;
   ai_protein_g: number | null;
@@ -270,6 +284,7 @@ type PayloadItem = {
   ai_sugar_g: number | null;
   ai_confidence: number | null;
   verdict: Verdict;
+  final_count: number | null;
   final_grams: number | null;
   final_kcal: number | null;
   final_protein_g: number | null;
@@ -295,6 +310,7 @@ export function toPayloadItems(
     const finals =
       verdict === "removed" || (!opts.keepFinals && verdict === "up")
         ? {
+            final_count: null,
             final_grams: null,
             final_kcal: null,
             final_protein_g: null,
@@ -304,6 +320,7 @@ export function toPayloadItems(
             final_sugar_g: null,
           }
         : {
+            final_count: item.final.count,
             final_grams: item.final.grams,
             final_kcal: item.final.kcal,
             final_protein_g: item.final.protein,
@@ -315,7 +332,9 @@ export function toPayloadItems(
     return {
       ...(item.dbId !== undefined ? { id: item.dbId } : {}),
       name: item.name,
+      unit: item.unit,
       ai_portion_desc: item.ai.portionDesc,
+      ai_count: item.ai.count,
       ai_grams: item.ai.grams,
       ai_kcal: item.ai.kcal,
       ai_protein_g: item.ai.protein,

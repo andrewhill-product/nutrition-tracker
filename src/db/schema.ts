@@ -41,7 +41,11 @@ export const mealItems = pgTable(
       .notNull()
       .references(() => meals.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    // Singular count unit for naturally counted items ("egg", "slice");
+    // null for weighed foods. Set by the analyser, never edited directly.
+    unit: text("unit"),
     aiPortionDesc: text("ai_portion_desc"),
+    aiCount: real("ai_count"),
     aiGrams: integer("ai_grams"),
     aiKcal: integer("ai_kcal"),
     aiProteinG: real("ai_protein_g"),
@@ -51,6 +55,7 @@ export const mealItems = pgTable(
     aiSugarG: real("ai_sugar_g"),
     aiConfidence: real("ai_confidence"),
     verdict: verdictEnum("verdict").notNull(),
+    finalCount: real("final_count"),
     finalGrams: integer("final_grams"),
     finalKcal: integer("final_kcal"),
     finalProteinG: real("final_protein_g"),
@@ -102,6 +107,22 @@ export const repeatItems = pgTable("repeat_items", {
   sugarG: real("sugar_g"),
 });
 
+/**
+ * Analyses Andrew binned without saving: the review screen records what the
+ * AI proposed and (optionally) what the meal actually was, so distil can
+ * learn identification mistakes that never reach meal_items.
+ */
+export const discardedAnalyses = pgTable("discarded_analyses", {
+  id: serial("id").primaryKey(),
+  // "photo" or "text": what kind of analysis was binned, so distil never
+  // blames the camera for a misread description.
+  source: text("source").notNull().default("photo"),
+  aiMealName: text("ai_meal_name").notNull(),
+  aiItemsSummary: text("ai_items_summary").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const calibrationNotes = pgTable("calibration_notes", {
   id: serial("id").primaryKey(),
   note: text("note").notNull(),
@@ -113,5 +134,6 @@ export type Meal = typeof meals.$inferSelect;
 export type MealItem = typeof mealItems.$inferSelect;
 export type Targets = typeof targets.$inferSelect;
 export type CalibrationNote = typeof calibrationNotes.$inferSelect;
+export type DiscardedAnalysis = typeof discardedAnalyses.$inferSelect;
 export type Repeat = typeof repeats.$inferSelect;
 export type RepeatItem = typeof repeatItems.$inferSelect;
