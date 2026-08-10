@@ -1,6 +1,6 @@
 # Nutrition Tracker
 
-Personal nutrition tracker for one user. Photograph food, Claude (`claude-fable-5`) estimates items and portions, every item passes human review (accept / edit / remove), totals track against daily targets, and corrections feed a prompt-side calibration loop. Mobile-first PWA on Vercel, tuned for an iPhone Pro Max.
+Personal nutrition tracker for one user. Photograph food, Claude estimates items and portions (Haiku 4.5 for analysis, Opus 5 for calibration), every item passes human review (accept / edit / remove), totals track against daily targets, and corrections feed a prompt-side calibration loop. Mobile-first PWA on Vercel, tuned for an iPhone Pro Max.
 
 ## Local run
 
@@ -28,7 +28,7 @@ Then open `http://<your-mac-ip>:3000` on the phone (same Wi-Fi). The auth cookie
    - **Create a Neon Postgres database** and connect it to the project. This injects `DATABASE_URL` (pooled) plus the unpooled URLs automatically.
    - **Create a Blob store** and connect it. This injects `BLOB_READ_WRITE_TOKEN`.
 3. In **Settings > Environment Variables**, add:
-   - `ANTHROPIC_API_KEY` (an Anthropic API key; the org must have default 30-day retention, see troubleshooting)
+   - `ANTHROPIC_API_KEY` (an Anthropic API key)
    - `APP_PASSWORD` (the single shared password; pick a long one)
 4. **Redeploy** (Deployments > latest > Redeploy) so the build picks up the env vars.
 5. Locally, pull the connected env and set up the database:
@@ -61,7 +61,6 @@ Then open `http://<your-mac-ip>:3000` on the phone (same Wi-Fi). The auth cookie
 
 ## Troubleshooting
 
-- **Every Claude request fails with a 400**: `claude-fable-5` requires the organisation's data retention to be at the 30-day default. Zero-data-retention orgs cannot use it; check the retention setting in the Anthropic Console.
 - **"Claude could not analyse this photo"**: the model refused, usually because the photo shows more than food (people, documents). Retake with just the plate in frame, or use "Enter by hand".
 - **First query of the day is slow**: Neon scales to zero; the first connection cold-starts the database. Subsequent requests are fast.
 - **`db:push` fails with prepared-statement or DDL errors**: you are pushing through the pooled URL. Set `DATABASE_URL_UNPOOLED` (or `POSTGRES_URL_NON_POOLING`) in `.env.local`; `vercel env pull` includes it when Neon is connected.

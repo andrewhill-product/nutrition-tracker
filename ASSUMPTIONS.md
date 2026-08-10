@@ -36,11 +36,10 @@ Every call made without asking, grouped by area.
 
 ## AI integration
 
-- At Andrew's request (2026-08-10), analyse runs on `claude-haiku-4-5` to cut cost per image by roughly 10x per token; Haiku takes the same structured-output schema but no effort parameter and no fallback beta. Distil remains on Fable. This supersedes the spec's Fable-for-all-estimation line; flipping back is a one-constant change in src/lib/ai/client.ts.
-- Distil model `claude-fable-5` via `client.beta.messages.create` with `betas: ["server-side-fallback-2026-07-01"]`, `fallbacks: "default"`, `max_tokens: 16000`; `thinking` is never passed (always on; explicit disable is a 400) and neither are temperature or top_p. Analyse runs at effort low, distil at effort medium, both with structured output JSON schemas (no numeric bounds; zod enforces ranges after).
+- At Andrew's request (2026-08-10), analyse runs on `claude-haiku-4-5` to cut cost per image by roughly 10x per token, and distil moved from Fable 5 to `claude-opus-5` ahead of his Max subscription lapsing (Opus 5 is a drop-in at half Fable's price: thinking on by default, same fallback beta, no 30-day retention requirement). This supersedes the spec's Fable-for-all-estimation line; both models are single constants in src/lib/ai/client.ts.
+- Distil model `claude-opus-5` via `client.beta.messages.create` with `betas: ["server-side-fallback-2026-07-01"]`, `fallbacks: "default"`, `max_tokens: 16000`; `thinking` is never passed (always on; explicit disable is a 400) and neither are temperature or top_p. Analyse runs at effort low, distil at effort medium, both with structured output JSON schemas (no numeric bounds; zod enforces ranges after).
 - `stop_reason` is branched on every call: refusal arrives as HTTP 200 and maps to a friendly in-flow error; truncation likewise.
 - Auto-retry happens once and only on a cheap parse/zod failure; refusal or API errors return immediately so the user's "Try again" is the second model call (avoids stacking two thinking calls against mobile Safari's ~60s fetch abort). Client fetches for analyse/distil carry a 55s AbortController deadline.
-- `claude-fable-5` requires 30-day org data retention (not ZDR); persistent 400s on every request point at retention config (see README troubleshooting).
 - An analysis returning zero items is treated as failure client-side with its own message.
 - `maxDuration = 300` on both AI routes assumes Vercel Fluid compute.
 

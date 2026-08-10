@@ -2,14 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getEnv } from "@/lib/env";
 
 /**
- * Analyse runs on Haiku 4.5 at Andrew's request to cut cost per image (about
- * 10x cheaper per token than Fable, no thinking overhead); the review gate
- * and calibration corrections absorb the accuracy difference. Distil stays on
- * Fable: it runs rarely and distilling patterns from 50 corrections is
- * judgment work.
+ * Analyse runs on Haiku 4.5 to keep cost per image low (the review gate and
+ * calibration corrections absorb the accuracy difference). Distil runs on
+ * Opus 5: it fires rarely, and distilling real patterns from 50 corrections
+ * is judgment work where a bad rule would skew every future estimate.
  */
 export const ANALYSE_MODEL = "claude-haiku-4-5";
-export const DISTIL_MODEL = "claude-fable-5";
+export const DISTIL_MODEL = "claude-opus-5";
 
 let client: Anthropic | null = null;
 
@@ -39,9 +38,10 @@ export async function callClaudeJson(opts: {
   schema: object;
   effort?: "low" | "medium" | "high";
 }): Promise<ClaudeJsonResult> {
-  // Fable takes the refusal-fallback beta and an effort level; Haiku rejects
-  // effort and does not use the fallback beta, so its call is the plain
-  // Messages API with just the structured-output format.
+  // Opus 5 takes the refusal-fallback beta and an effort level (thinking is
+  // on by default; never pass the thinking param); Haiku rejects effort and
+  // does not use the fallback beta, so its call is the plain Messages API
+  // with just the structured-output format.
   const params =
     opts.model === DISTIL_MODEL
       ? {
