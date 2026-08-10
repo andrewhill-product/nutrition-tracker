@@ -36,9 +36,14 @@ export async function runAnalyse(req: AnalyseRequestT): Promise<AnalyseOutcome> 
             role: "user",
             content: [
               { type: "image", source: { type: "url", url: req.imageUrl } },
+              ...(req.labelUrl
+                ? [{ type: "image", source: { type: "url", url: req.labelUrl } }]
+                : []),
               {
                 type: "text",
-                text: "Estimate the food items and portions in this meal photo.",
+                text: req.labelUrl
+                  ? "The first photo is the meal; the second is the packaging nutrition label. Read the values from the label and scale them to the portion visible in the meal photo. Label-derived values deserve high confidence."
+                  : "Estimate the food items and portions in this meal photo.",
               },
             ],
           },

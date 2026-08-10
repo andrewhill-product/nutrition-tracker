@@ -19,6 +19,9 @@ export function SlotPicker({
   today,
   previewUrl,
   uploading,
+  labelPreviewUrl = null,
+  labelUploading = false,
+  onAddLabel,
   actionLabel = "Analyse",
   onSlotChange,
   onAnalyse,
@@ -29,6 +32,9 @@ export function SlotPicker({
   today: string;
   previewUrl: string | null;
   uploading: boolean;
+  labelPreviewUrl?: string | null;
+  labelUploading?: boolean;
+  onAddLabel?: () => void;
   actionLabel?: string;
   onSlotChange: (slot: Slot) => void;
   onAnalyse: () => void;
@@ -37,6 +43,27 @@ export function SlotPicker({
   return (
     <div className="space-y-4">
       <PhotoPreview previewUrl={previewUrl} uploading={uploading} />
+      {previewUrl && onAddLabel && (
+        <button
+          type="button"
+          onClick={onAddLabel}
+          className="mx-auto flex items-center gap-2 rounded-xl border border-dashed border-line px-3 py-2 text-sm font-medium text-muted"
+        >
+          {labelPreviewUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={labelPreviewUrl}
+                alt="Nutrition label photo"
+                className="h-9 w-9 rounded-lg object-cover"
+              />
+              {labelUploading ? "Uploading label…" : "Label added. Tap to retake"}
+            </>
+          ) : (
+            <>📦 Add the box label (optional)</>
+          )}
+        </button>
+      )}
       <h2 className="text-lg font-semibold">Which meal is this?</h2>
       <div className="grid grid-cols-2 gap-2">
         {SLOTS.map((s) => (

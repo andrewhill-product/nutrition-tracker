@@ -71,6 +71,8 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const [busyRepeatId, setBusyRepeatId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [labelPreviewUrl, setLabelPreviewUrl] = useState<string | null>(null);
+  const [labelUploading, setLabelUploading] = useState(false);
 
   // The slot picker still shows, pre-selected from the deep link until tapped.
   const effectiveSlot = slot ?? urlSlot;
@@ -78,9 +80,12 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const uploadRef = useRef<Promise<string> | null>(null);
   const uploadSeq = useRef(0);
   const photoUrlRef = useRef<string | null>(null);
+  const labelUploadRef = useRef<Promise<string> | null>(null);
+  const labelUrlRef = useRef<string | null>(null);
   const cancelledRef = useRef(false);
   const cameraInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
+  const labelInput = useRef<HTMLInputElement>(null);
 
   // Fire the deep link once per navigation (not once per session): key on the
   // full query string, and reset() strips the params so a repeat tap of the
@@ -125,8 +130,13 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
     setUploading(false);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    if (labelPreviewUrl) URL.revokeObjectURL(labelPreviewUrl);
+    setLabelPreviewUrl(null);
+    setLabelUploading(false);
     uploadRef.current = null;
     photoUrlRef.current = null;
+    labelUploadRef.current = null;
+    labelUrlRef.current = null;
     stripCaptureParams();
   }
 
@@ -194,6 +204,42 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
     }
   }
 
+  /**
+   * Optional second photo: the packaging nutrition label (e.g. the back of a
+   * cereal box). Uploaded in the background like the meal photo; analyse
+   * sends both so the model reads exact values and scales them to the bowl.
+   */
+  async function handleLabelFile(file: File | undefined) {
+    if (!file) return;
+    const seq = uploadSeq.current;
+    try {
+      const { downscaleToJpeg } = await import("./photo");
+      const blob = await downscaleToJpeg(file);
+      if (cancelledRef.current || uploadSeq.current !== seq) return;
+      setLabelPreviewUrl(URL.createObjectURL(blob));
+      setLabelUploading(true);
+      labelUploadRef.current = upload("meals/label.jpg", blob, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+        contentType: "image/jpeg",
+      }).then((r) => {
+        if (uploadSeq.current === seq && !cancelledRef.current) {
+          labelUrlRef.current = r.url;
+          setLabelUploading(false);
+        }
+        return r.url;
+      });
+      labelUploadRef.current.catch(() => {
+        if (uploadSeq.current !== seq || cancelledRef.current) return;
+        setLabelUploading(false);
+        setLabelPreviewUrl(null);
+        labelUploadRef.current = null;
+      });
+    } catch {
+      if (uploadSeq.current === seq) setLabelPreviewUrl(null);
+    }
+  }
+
   /** Wrap a fresh draft as a conversion of the deep-linked planned meal. */
   function withConversion(draft: ReviewDraft): ReviewDraft {
     if (convertId === null) return draft;
@@ -209,7 +255,13 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
         const url = photoUrlRef.current ?? (await uploadRef.current);
         if (!url) throw new Error("no-upload");
         photoUrlRef.current = url;
-        body = { mode: "image", imageUrl: url };
+        let label = labelUrlRef.current;
+        if (!label && labelUploadRef.current) {
+          label = await labelUploadRef.current.catch(() => null);
+        }
+        body = label
+          ? { mode: "image", imageUrl: url, labelUrl: label }
+          : { mode: "image", imageUrl: url };
       } catch {
         setState({ step: "error", message: "The photo upload failed. Check your connection and try again.", retryable: false });
         return;
@@ -343,6 +395,17 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
           e.target.value = "";
         }}
       />
+      <input
+        ref={labelInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          handleLabelFile(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
 
       <button
         type="button"
@@ -387,6 +450,13 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                     today={today}
                     previewUrl={kind === "photo" && !manualPending ? previewUrl : null}
                     uploading={manualPending ? false : uploading}
+                    labelPreviewUrl={kind === "photo" && !manualPending ? labelPreviewUrl : null}
+                    labelUploading={labelUploading}
+                    onAddLabel={
+                      kind === "photo" && !manualPending
+                        ? () => labelInput.current?.click()
+                        : undefined
+                    }
                     actionLabel={manualPending ? "Continue" : "Analyse"}
                     onSlotChange={setSlot}
                     onAnalyse={manualPending ? openManualReview : analyse}

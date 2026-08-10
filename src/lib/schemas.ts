@@ -37,7 +37,12 @@ export const AnalysisResult = z.object({
 export type AnalysisResultT = z.infer<typeof AnalysisResult>;
 
 export const AnalyseRequest = z.discriminatedUnion("mode", [
-  z.object({ mode: z.literal("image"), imageUrl: z.url() }),
+  z.object({
+    mode: z.literal("image"),
+    imageUrl: z.url(),
+    // Optional second photo of the packaging nutrition label.
+    labelUrl: z.url().nullish().default(null),
+  }),
   z.object({ mode: z.literal("text"), description: z.string().min(1).max(2000) }),
 ]);
 export type AnalyseRequestT = z.infer<typeof AnalyseRequest>;
