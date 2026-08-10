@@ -33,7 +33,7 @@ export function PlannedDinnerCard({ meal }: { meal: MealWithItems }) {
           Log it
         </Link>
         <Link
-          href={`/?date=${meal.date}&capture=photo&slot=dinner&convert=${meal.id}`}
+          href={`/today?date=${meal.date}&capture=photo&slot=dinner&convert=${meal.id}`}
           aria-label="Log from a fresh photo"
           className="flex h-11 w-12 items-center justify-center rounded-xl bg-surface2 text-lg"
         >

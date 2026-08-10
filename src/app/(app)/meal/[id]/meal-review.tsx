@@ -21,7 +21,7 @@ export function MealReview({
       draft={draft}
       onClose={() => router.back()}
       onSaved={(date) => {
-        router.push(`/?date=${date}`);
+        router.push(`/today?date=${date}`);
         router.refresh();
       }}
     />

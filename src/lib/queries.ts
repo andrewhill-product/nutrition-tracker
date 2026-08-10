@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   calibrationNotes,
@@ -98,6 +98,16 @@ export async function getRepeats(): Promise<RepeatWithItems[]> {
     .where(inArray(repeatItems.repeatId, rows.map((r) => r.id)))
     .orderBy(asc(repeatItems.id));
   return rows.map((r) => ({ ...r, items: items.filter((i) => i.repeatId === r.id) }));
+}
+
+/** Most recent logged meals that have a photo, newest first (home strip). */
+export async function getRecentPhotoMeals(limit = 8) {
+  return db
+    .select({ id: meals.id, name: meals.name, date: meals.date, photoUrl: meals.photoUrl })
+    .from(meals)
+    .where(and(eq(meals.status, "logged"), isNotNull(meals.photoUrl)))
+    .orderBy(desc(meals.date), desc(meals.id))
+    .limit(limit);
 }
 
 /** Dates that already have a planned dinner (import shows a replaces flag). */

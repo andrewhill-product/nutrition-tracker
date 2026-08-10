@@ -29,7 +29,7 @@ export function WeekDots({ days, today }: { days: DayScore[]; today: string }) {
         {days.map((day) => (
           <Link
             key={day.date}
-            href={day.date === today ? "/" : `/?date=${day.date}`}
+            href={day.date === today ? "/today" : `/today?date=${day.date}`}
             className="flex min-w-9 flex-col items-center gap-1.5 py-1"
             aria-label={`${formatShort(day.date)}: ${day.state.replace("-", " ")}`}
           >

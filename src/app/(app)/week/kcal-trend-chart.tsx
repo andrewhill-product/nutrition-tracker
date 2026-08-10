@@ -66,7 +66,7 @@ export function KcalTrendChart({
             radius={[6, 6, 0, 0]}
             onClick={(_, index) => {
               const day = days[index];
-              if (day) router.push(`/?date=${day.date}`);
+              if (day) router.push(`/today?date=${day.date}`);
             }}
           >
             {days.map((d) => (

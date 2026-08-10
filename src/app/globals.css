@@ -94,3 +94,19 @@ body {
 .pulse-once {
   animation: pulse-once 0.25s ease-in-out;
 }
+
+@keyframes bar-fill {
+  from { width: 0; }
+}
+
+.bar-fill {
+  animation: bar-fill 0.35s ease-out;
+}
+
+@keyframes ring-fill {
+  from { stroke-dashoffset: 176; }
+}
+
+.ring-fill {
+  animation: ring-fill 0.4s ease-out;
+}

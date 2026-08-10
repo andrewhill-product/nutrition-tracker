@@ -12,7 +12,7 @@ export function DateHeader({ date }: { date: string }) {
   const today = todayLondon();
 
   function go(target: string) {
-    router.push(target === today ? "/" : `/?date=${target}`);
+    router.push(target === today ? "/today" : `/today?date=${target}`);
   }
 
   return (

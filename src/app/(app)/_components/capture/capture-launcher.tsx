@@ -55,7 +55,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const searchParams = useSearchParams();
   const today = todayLondon();
 
-  const dateParam = pathname === "/" ? searchParams.get("date") : null;
+  const dateParam = pathname === "/today" ? searchParams.get("date") : null;
   const date = dateParam ?? today;
 
   const captureParam = searchParams.get("capture");
@@ -93,20 +93,28 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const lastHandledDeepLink = useRef<string | null>(null);
   useEffect(() => {
     const key = searchParams.toString();
-    if (captureParam !== "photo" || lastHandledDeepLink.current === key) return;
+    if (
+      (captureParam !== "photo" && captureParam !== "sheet" && captureParam !== "repeat") ||
+      lastHandledDeepLink.current === key
+    )
+      return;
     lastHandledDeepLink.current = key;
     cancelledRef.current = false;
-    // Open the action sheet as a guaranteed visible response, and attempt the
-    // camera directly (browsers that block a programmatic file-input click
-    // outside a user gesture simply leave the sheet showing, one tap away).
     const timer = setTimeout(() => {
+      if (captureParam === "repeat") {
+        setState((s) => (s.step === "closed" ? { step: "repeats" } : s));
+        return;
+      }
+      // "sheet" opens the action sheet; "photo" additionally attempts the
+      // camera (browsers that block a programmatic file-input click outside a
+      // user gesture simply leave the sheet showing, one tap away).
       setState((s) => (s.step === "closed" ? { step: "sheet" } : s));
-      cameraInput.current?.click();
+      if (captureParam === "photo") cameraInput.current?.click();
     }, 0);
     return () => clearTimeout(timer);
   }, [captureParam, searchParams]);
 
-  const visible = pathname === "/" || pathname === "/week";
+  const visible = pathname === "/" || pathname === "/today" || pathname === "/week";
   if (!visible) return null;
 
   function stripCaptureParams() {
@@ -366,7 +374,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
 
   function onSaved(savedDate: string) {
     reset();
-    router.push(`/?date=${savedDate}`);
+    router.push(`/today?date=${savedDate}`);
     router.refresh();
   }
 

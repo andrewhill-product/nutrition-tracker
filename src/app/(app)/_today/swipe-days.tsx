@@ -57,7 +57,7 @@ export function SwipeDays({
   }, [date]);
 
   function go(target: string) {
-    router.push(target === todayLondon() ? "/" : `/?date=${target}`);
+    router.push(target === todayLondon() ? "/today" : `/today?date=${target}`);
   }
 
   function settleBack(el: HTMLElement, fromX: number) {

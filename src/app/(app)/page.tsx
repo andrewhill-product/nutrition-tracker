@@ -1,85 +1,125 @@
-import { isDateString, todayLondon } from "@/lib/dates";
-import { getDay, getTargets } from "@/lib/queries";
+import Link from "next/link";
+import { formatLong, mondayOf, todayLondon } from "@/lib/dates";
+import {
+  getDay,
+  getRange,
+  getRecentPhotoMeals,
+  getTargets,
+} from "@/lib/queries";
+import { SLOT_LABELS } from "@/lib/slots";
 import { dayTotals } from "@/lib/totals";
-import { DateHeader } from "./_today/date-header";
-import { SwipeDays } from "./_today/swipe-days";
-import { KcalRing } from "./_today/kcal-ring";
-import { MacroBars } from "./_today/macro-bars";
-import { MealCard } from "./_today/meal-card";
-import { PlannedDinnerCard } from "./_today/planned-dinner-card";
-import { SlotGroup } from "./_today/slot-group";
+import { GlanceCard } from "./_home/glance-card";
+import { PhotoStrip } from "./_home/photo-strip";
+import { TeaCard } from "./_home/tea-card";
 
 export const dynamic = "force-dynamic";
 
-const SLOTS = [
-  { value: "breakfast", label: "Breakfast" },
-  { value: "lunch", label: "Lunch" },
-  { value: "dinner", label: "Tea" },
-  { value: "snack", label: "Snacks" },
-  { value: "drink", label: "Drinks" },
-] as const;
+function londonHour(): number {
+  return Number(
+    new Intl.DateTimeFormat("en-GB", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "Europe/London",
+    }).format(new Date())
+  );
+}
 
-export default async function TodayPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ date?: string }>;
-}) {
-  const params = await searchParams;
-  const date =
-    params.date && isDateString(params.date) ? params.date : todayLondon();
-
-  const [meals, targets] = await Promise.all([getDay(date), getTargets()]);
-  const totals = dayTotals(meals);
+/**
+ * The calm front door. One loud element (the camera button); everything else
+ * is soft, descriptive and optional. Exact numbers live on Today, one tap
+ * away. Copy is factual, never evaluative.
+ */
+export default async function HomePage() {
+  const today = todayLondon();
+  const hour = londonHour();
+  const [meals, targets, photoMeals, weekMeals] = await Promise.all([
+    getDay(today),
+    getTargets(),
+    getRecentPhotoMeals(8),
+    getRange(mondayOf(today), today),
+  ]);
   const logged = meals.filter((m) => m.status === "logged");
-  const planned = meals.filter((m) => m.status === "planned");
+  const totals = dayTotals(meals);
+  const plannedTea =
+    meals.find((m) => m.slot === "dinner" && m.status === "planned") ?? null;
+  const daysLoggedThisWeek = new Set(
+    weekMeals.filter((m) => m.status === "logged").map((m) => m.date)
+  ).size;
+
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  const slotLogged = (slot: string) => logged.some((m) => m.slot === slot);
+  const suggestion =
+    hour < 11
+      ? slotLogged("breakfast")
+        ? "Breakfast logged"
+        : "Log breakfast?"
+      : hour < 16
+        ? slotLogged("lunch")
+          ? "Lunch logged"
+          : "Log lunch?"
+        : plannedTea
+          ? `Tea tonight: ${plannedTea.name}`
+          : slotLogged("dinner")
+            ? "Tea logged"
+            : "Log tea?";
+
+  const loggedSlots = Array.from(new Set(logged.map((m) => m.slot)));
+  const phrase =
+    loggedSlots.length === 0
+      ? "Nothing logged yet today"
+      : loggedSlots
+          .map((s, i) => {
+            const label = SLOT_LABELS[s];
+            return i === 0 ? label : label.toLowerCase();
+          })
+          .join(" and ") + " logged";
+
+  const glance = <GlanceCard totals={totals} targets={targets} phrase={phrase} />;
+  const tea = <TeaCard plannedTea={plannedTea} />;
 
   return (
-    <SwipeDays date={date}>
-      <DateHeader date={date} />
-      <div className="space-y-6 px-4 py-5">
-        <KcalRing kcal={totals.kcal} target={targets.kcal} />
-        <MacroBars
-          values={{
-            protein: totals.protein_g,
-            carbs: totals.carbs_g,
-            fat: totals.fat_g,
-            fibre: totals.fibre_g,
-            sugar: totals.sugar_g,
-          }}
-          targets={{
-            protein: targets.proteinG,
-            carbs: targets.carbsG,
-            fat: targets.fatG,
-            fibre: targets.fibreG,
-            sugar: targets.sugarG,
-          }}
-        />
+    <div className="safe-top space-y-6 px-4 py-6">
+      <header>
+        <h1 className="text-3xl font-bold">{greeting}, Andrew</h1>
+        <p className="mt-1 text-muted">{formatLong(today)}</p>
+        <p className="mt-3 text-lg font-medium">{suggestion}</p>
+      </header>
 
-        {logged.length === 0 && planned.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-line p-6 text-center text-muted">
-            <p className="font-medium">Nothing logged for this day yet.</p>
-            <p className="mt-1 text-sm">
-              Tap the + button to photograph a meal or type one in.
-            </p>
-          </div>
-        )}
-
-        {SLOTS.map((slot) => {
-          const slotLogged = logged.filter((m) => m.slot === slot.value);
-          const slotPlanned = planned.filter((m) => m.slot === slot.value);
-          if (slotLogged.length === 0 && slotPlanned.length === 0) return null;
-          return (
-            <SlotGroup key={slot.value} label={slot.label}>
-              {slotLogged.map((meal) => (
-                <MealCard key={meal.id} meal={meal} />
-              ))}
-              {slotPlanned.map((meal) => (
-                <PlannedDinnerCard key={meal.id} meal={meal} />
-              ))}
-            </SlotGroup>
-          );
-        })}
+      <div className="flex flex-col items-center gap-2 py-2">
+        <Link
+          href="/?capture=sheet"
+          aria-label="Add a meal"
+          className="flex h-24 w-24 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </Link>
+        <span className="text-sm font-semibold">Add a meal</span>
       </div>
-    </SwipeDays>
+
+      {hour < 12 ? (
+        <>
+          {glance}
+          {tea}
+        </>
+      ) : (
+        <>
+          {tea}
+          {glance}
+        </>
+      )}
+
+      <PhotoStrip meals={photoMeals} />
+
+      {daysLoggedThisWeek > 0 && (
+        <p className="tnum text-center text-sm text-muted">
+          {daysLoggedThisWeek} {daysLoggedThisWeek === 1 ? "day" : "days"} logged this week
+        </p>
+      )}
+    </div>
   );
 }

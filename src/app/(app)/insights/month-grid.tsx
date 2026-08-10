@@ -31,7 +31,7 @@ export function MonthGrid({
             {week.map((day) => (
               <Link
                 key={day.date}
-                href={`/?date=${day.date}`}
+                href={`/today?date=${day.date}`}
                 className="flex justify-center py-0.5"
                 aria-label={`${formatShort(day.date)}: ${(day.date > today ? "empty" : day.state).replace("-", " ")}`}
               >
