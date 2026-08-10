@@ -30,6 +30,7 @@ export function ReviewScreen({
   const [items, setItems] = useState<ReviewItem[]>(draft.items);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [repeatMessage, setRepeatMessage] = useState<string | null>(null);
 
   const unreviewed = items.filter((i) => i.verdict === null).length;
   const kept = items.filter((i) => i.verdict !== "removed").length;
@@ -103,6 +104,43 @@ export function ReviewScreen({
     onSaved(draft.date);
   }
 
+  /** Save the kept, reviewed items as a repeat template (edit mode only). */
+  async function saveAsRepeat() {
+    if (busy) return;
+    const kept = items.filter(
+      (i) => i.verdict !== "removed" && i.final.kcal !== null
+    );
+    if (kept.length === 0) {
+      setRepeatMessage("Nothing to save: no items with calories.");
+      return;
+    }
+    setBusy(true);
+    setRepeatMessage(null);
+    const res = await fetchJson<{ id: number }>("/api/repeats", {
+      method: "POST",
+      body: JSON.stringify({
+        name: name.trim() || "Meal",
+        slot: draft.slot,
+        items: kept.map((i) => ({
+          name: i.name,
+          grams: i.final.grams,
+          kcal: i.final.kcal,
+          protein_g: i.final.protein,
+          carbs_g: i.final.carbs,
+          fat_g: i.final.fat,
+          fibre_g: i.final.fibre,
+          sugar_g: i.final.sugar,
+        })),
+      }),
+    });
+    setBusy(false);
+    setRepeatMessage(
+      res.ok
+        ? "Saved. It is now in the + menu under Log a repeat meal."
+        : res.error
+    );
+  }
+
   async function deleteMeal() {
     if (busy || draft.mealId === undefined) return;
     setBusy(true);
@@ -138,6 +176,21 @@ export function ReviewScreen({
           onAdd={(item) => setItems((prev) => [...prev, item])}
         />
       </div>
+      {draft.mode === "edit" && (
+        <div className="space-y-2">
+          {repeatMessage && (
+            <p className="text-sm text-muted">{repeatMessage}</p>
+          )}
+          <button
+            type="button"
+            onClick={saveAsRepeat}
+            disabled={busy}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface2 font-semibold disabled:opacity-50"
+          >
+            🔁 Save as repeat
+          </button>
+        </div>
+      )}
       <ReviewFooter
         totals={liveTotals(items)}
         unreviewedCount={unreviewed}

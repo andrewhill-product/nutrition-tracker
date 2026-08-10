@@ -3,8 +3,9 @@
 import { upload } from "@vercel/blob/client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { formatShort, todayLondon } from "@/lib/dates";
+import { formatShort, relativeLabel, todayLondon } from "@/lib/dates";
 import { fetchJson } from "@/lib/fetchJson";
+import type { RepeatWithItems } from "@/lib/queries";
 import type { AnalysisResultT, Slot } from "@/lib/schemas";
 import { ReviewScreen } from "../review/review-screen";
 import {
@@ -23,9 +24,17 @@ type Step =
   | { step: "sheet" }
   | { step: "text" }
   | { step: "slot" }
+  | { step: "repeats" }
   | { step: "analysing" }
   | { step: "error"; message: string; retryable: boolean }
   | { step: "review"; draft: ReviewDraft };
+
+const SLOT_LABEL: Record<Slot, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
 
 function parseSlot(value: string | null): Slot | null {
   return value === "breakfast" || value === "lunch" || value === "dinner" || value === "snack"
@@ -42,7 +51,7 @@ function parseSlot(value: string | null): Slot | null {
  * conversion of that planned meal (PUT, source updated to photo) rather than a
  * brand-new meal.
  */
-export function CaptureLauncher() {
+export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -61,6 +70,7 @@ export function CaptureLauncher() {
   const [slot, setSlot] = useState<Slot | null>(null);
   const [manualPending, setManualPending] = useState(false);
   const [description, setDescription] = useState("");
+  const [busyRepeatId, setBusyRepeatId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -131,6 +141,10 @@ export function CaptureLauncher() {
     if (action === "text") {
       setKind("text");
       setState({ step: "text" });
+      return;
+    }
+    if (action === "repeat") {
+      setState({ step: "repeats" });
       return;
     }
     (action === "camera" ? cameraInput : libraryInput).current?.click();
@@ -263,6 +277,43 @@ export function CaptureLauncher() {
     openManualReview();
   }
 
+  /**
+   * Log a repeat: replays the template's human-approved finals as manual
+   * "edited" items. No AI call, no calibration influence (ai_* stays null),
+   * and the meal is editable afterwards like any other.
+   */
+  async function logRepeat(r: RepeatWithItems) {
+    if (busyRepeatId !== null) return;
+    setBusyRepeatId(r.id);
+    const res = await fetchJson<{ id: number }>("/api/meals", {
+      method: "POST",
+      body: JSON.stringify({
+        date,
+        slot: r.slot,
+        name: r.name,
+        source: "manual",
+        status: "logged",
+        items: r.items.map((i) => ({
+          name: i.name,
+          verdict: "edited",
+          final_grams: i.grams ?? 0,
+          final_kcal: i.kcal,
+          final_protein_g: i.proteinG,
+          final_carbs_g: i.carbsG,
+          final_fat_g: i.fatG,
+          final_fibre_g: i.fibreG,
+          final_sugar_g: i.sugarG,
+        })),
+      }),
+    });
+    setBusyRepeatId(null);
+    if (!res.ok) {
+      setState({ step: "error", message: res.error, retryable: false });
+      return;
+    }
+    onSaved(date);
+  }
+
   function onSaved(savedDate: string) {
     reset();
     router.push(`/?date=${savedDate}`);
@@ -311,6 +362,7 @@ export function CaptureLauncher() {
       <ActionSheet
         open={state.step === "sheet"}
         nonTodayDate={date !== today ? formatShort(date) : null}
+        hasRepeats={repeats.length > 0}
         onAction={handleAction}
         onClose={reset}
       />
@@ -342,6 +394,41 @@ export function CaptureLauncher() {
                     onAnalyse={manualPending ? openManualReview : analyse}
                     onCancel={reset}
                   />
+                )}
+                {state.step === "repeats" && (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold">Log a repeat meal</h2>
+                    <p className="text-sm text-muted">
+                      Logging to {relativeLabel(date, today)} with your saved values.
+                      No analysis call is made.
+                    </p>
+                    {repeats.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={busyRepeatId !== null}
+                        onClick={() => logRepeat(r)}
+                        className="flex w-full items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-4 text-left disabled:opacity-60"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{r.name}</p>
+                          <p className="text-xs text-muted">{SLOT_LABEL[r.slot]}</p>
+                        </div>
+                        <span className="tnum shrink-0 font-bold">
+                          {busyRepeatId === r.id
+                            ? "Logging…"
+                            : `${r.items.reduce((s, i) => s + i.kcal, 0)} kcal`}
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={reset}
+                      className="flex h-12 w-full items-center justify-center rounded-xl font-semibold text-muted"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 )}
                 {state.step === "analysing" && <AnalysingCard onCancel={reset} />}
                 {state.step === "error" && (

@@ -153,6 +153,27 @@ export type ImportCommitT = z.infer<typeof ImportCommit>;
 
 export const LoginInput = z.object({ password: z.string().min(1) });
 
+export const RepeatInput = z.object({
+  name: z.string().min(1).max(200),
+  slot: SlotEnum,
+  items: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        grams: z.number().int().min(0).nullish().default(null),
+        kcal: z.number().int().min(0),
+        protein_g: z.number().min(0).nullish().default(null),
+        carbs_g: z.number().min(0).nullish().default(null),
+        fat_g: z.number().min(0).nullish().default(null),
+        fibre_g: z.number().min(0).nullish().default(null),
+        sugar_g: z.number().min(0).nullish().default(null),
+      })
+    )
+    .min(1)
+    .max(30),
+});
+export type RepeatInputT = z.infer<typeof RepeatInput>;
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);

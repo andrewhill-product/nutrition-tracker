@@ -62,6 +62,10 @@ Every call made without asking, grouped by area.
 - Rows whose numbers came from the sheet keep `ai_confidence` NULL; only the estimate step sets it (AI provenance). Estimated rows aggregate the analysis items into one meal item, with confidence = the minimum item confidence.
 - Estimate failures stay importable with a "No estimate" chip; those items require full manual entry at log time.
 
+## Repeat meals
+
+- Repeats are templates saved from already-reviewed logged meals (Save as repeat on the meal's edit screen; managed in Settings). Logging one replays the human-approved final values as manual "edited" items in a single tap from the + menu: no AI call is made, so a repeated breakfast costs zero tokens. Replayed items carry no ai_* values, so repeats never feed the calibration loop (the original corrections were counted once, when first reviewed). The review gate is not re-applied because nothing new is estimated; the logged meal stays editable like any other. Items whose grams were unknown replay with 0g so the server's edited-verdict invariant holds.
+
 ## Insights and sugar tracking
 
 - Sugar was added end to end (estimation schema, review, targets, import, export) to power the Insights tab. It tracks TOTAL sugars, the label's "of which sugars" figure, with a default ceiling of 90g (the UK label reference intake). The NHS 30g a day figure is for free sugars, which labels do not declare separately and Claude cannot reliably distinguish; the Settings caption explains the difference. Meal items logged before the sugar column existed have NULL sugar and count as 0 in totals.

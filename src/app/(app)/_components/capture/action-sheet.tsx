@@ -2,16 +2,18 @@
 
 import { Sheet } from "../ui/sheet";
 
-export type CaptureAction = "camera" | "library" | "text" | "import";
+export type CaptureAction = "camera" | "library" | "text" | "repeat" | "import";
 
 export function ActionSheet({
   open,
   nonTodayDate,
+  hasRepeats,
   onAction,
   onClose,
 }: {
   open: boolean;
   nonTodayDate: string | null;
+  hasRepeats: boolean;
   onAction: (action: CaptureAction) => void;
   onClose: () => void;
 }) {
@@ -34,6 +36,11 @@ export function ActionSheet({
         <button type="button" className={row} onClick={() => onAction("text")}>
           <span aria-hidden>⌨️</span> Type it in
         </button>
+        {hasRepeats && (
+          <button type="button" className={row} onClick={() => onAction("repeat")}>
+            <span aria-hidden>🔁</span> Log a repeat meal
+          </button>
+        )}
         <button type="button" className={row} onClick={() => onAction("import")}>
           <span aria-hidden>📄</span> Import spreadsheet
         </button>

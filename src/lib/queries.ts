@@ -4,8 +4,12 @@ import {
   calibrationNotes,
   mealItems,
   meals,
+  repeatItems,
+  repeats,
   targets,
   type CalibrationNote,
+  type Repeat,
+  type RepeatItem,
   type Targets,
 } from "@/db/schema";
 import { addDays } from "./dates";
@@ -80,6 +84,20 @@ export async function getActiveNotes(): Promise<CalibrationNote[]> {
     .from(calibrationNotes)
     .where(eq(calibrationNotes.active, true))
     .orderBy(asc(calibrationNotes.id));
+}
+
+export type RepeatWithItems = Repeat & { items: RepeatItem[] };
+
+/** Saved repeat meals with their items, for one-tap re-logging. */
+export async function getRepeats(): Promise<RepeatWithItems[]> {
+  const rows = await db.select().from(repeats).orderBy(asc(repeats.name));
+  if (rows.length === 0) return [];
+  const items = await db
+    .select()
+    .from(repeatItems)
+    .where(inArray(repeatItems.repeatId, rows.map((r) => r.id)))
+    .orderBy(asc(repeatItems.id));
+  return rows.map((r) => ({ ...r, items: items.filter((i) => i.repeatId === r.id) }));
 }
 
 /** Dates that already have a planned dinner (import shows a replaces flag). */

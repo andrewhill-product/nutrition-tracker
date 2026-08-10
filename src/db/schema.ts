@@ -74,6 +74,33 @@ export const targets = pgTable("targets", {
   sugarG: integer("sugar_g").notNull().default(90),
 });
 
+/**
+ * Repeat meals: templates of already-reviewed meals for one-tap re-logging.
+ * They store final (human-approved) values only, so replaying one costs no
+ * AI call and never feeds calibration.
+ */
+export const repeats = pgTable("repeats", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slot: slotEnum("slot").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const repeatItems = pgTable("repeat_items", {
+  id: serial("id").primaryKey(),
+  repeatId: integer("repeat_id")
+    .notNull()
+    .references(() => repeats.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  grams: integer("grams"),
+  kcal: integer("kcal").notNull(),
+  proteinG: real("protein_g"),
+  carbsG: real("carbs_g"),
+  fatG: real("fat_g"),
+  fibreG: real("fibre_g"),
+  sugarG: real("sugar_g"),
+});
+
 export const calibrationNotes = pgTable("calibration_notes", {
   id: serial("id").primaryKey(),
   note: text("note").notNull(),
@@ -85,3 +112,5 @@ export type Meal = typeof meals.$inferSelect;
 export type MealItem = typeof mealItems.$inferSelect;
 export type Targets = typeof targets.$inferSelect;
 export type CalibrationNote = typeof calibrationNotes.$inferSelect;
+export type Repeat = typeof repeats.$inferSelect;
+export type RepeatItem = typeof repeatItems.$inferSelect;
