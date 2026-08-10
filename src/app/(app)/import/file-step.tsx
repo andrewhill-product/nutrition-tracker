@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { todayLondon } from "@/lib/dates";
+import { isWeeklyGrid, weeklyGridToLong } from "@/lib/import/detect";
 import type { SheetData } from "./types";
 
 /** Client-side SheetJS parse of the first sheet; instant preview, no upload. */
@@ -23,7 +25,14 @@ export function FileStep({ onParsed }: { onParsed: (sheet: SheetData) => void })
       });
       if (grid.length === 0) throw new Error("empty");
       const headers = (grid[0] ?? []).map((h) => String(h ?? ""));
-      onParsed({ headers, rows: grid.slice(1) });
+      const rows = grid.slice(1);
+      // Weekly grids (weekdays across the top, dinners in a Tea/Dinner row)
+      // are transposed into Date/Meal rows with upcoming dates resolved.
+      onParsed(
+        isWeeklyGrid(headers, rows)
+          ? weeklyGridToLong(headers, rows, todayLondon())
+          : { headers, rows }
+      );
     } catch {
       setError(
         "Could not read that file. Save it as .csv or .xlsx and try again."

@@ -82,6 +82,82 @@ export function parseNumber(value: unknown): number | null {
   return null;
 }
 
+const WEEKDAY_PREFIX: Record<string, number> = {
+  mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6,
+};
+
+/** "Tuesday", "Tues", "Wed" -> Monday-based weekday index, else null. */
+export function weekdayIndex(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const s = value.trim().toLowerCase();
+  if (!/^[a-z]{3,9}$/.test(s)) return null;
+  const idx = WEEKDAY_PREFIX[s.slice(0, 3)];
+  if (idx === undefined) return null;
+  const full = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][idx];
+  return full.startsWith(s) || s === full.slice(0, 4) || s === "thurs" || s === "tues"
+    ? idx
+    : null;
+}
+
+function mondayIndexOf(date: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+}
+
+function plusDays(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/**
+ * A weekly-grid sheet has weekday names across the header row (Tuesday,
+ * Wednesday, ...) and meal slots down the first column, with the evening
+ * meals in a row labelled Tea or Dinner.
+ */
+export function isWeeklyGrid(headers: string[], rows: unknown[][]): boolean {
+  void rows;
+  return headers.filter((h) => weekdayIndex(h) !== null).length >= 3;
+}
+
+/**
+ * Transpose a weekly grid into the long Date/Meal shape the importer expects.
+ * Each weekday column resolves to its next upcoming date: the first column
+ * lands on or after `today`, later columns always advance, so a trailing
+ * repeat weekday (a second Tuesday) lands a week on.
+ */
+export function weeklyGridToLong(
+  headers: string[],
+  rows: unknown[][],
+  today: string
+): { headers: string[]; rows: unknown[][] } {
+  const label = (r: unknown[]) => String(r?.[0] ?? "").trim().toLowerCase();
+  const dinnerRow =
+    rows.find((r) => /^(tea|dinner|supper|evening)/.test(label(r))) ??
+    // Fallback: the row with the most filled cells that is not breakfast/lunch.
+    rows
+      .filter((r) => !/^(breakfast|lunch)/.test(label(r)))
+      .reduce<unknown[] | null>((best, r) => {
+        const filled = r.slice(1).filter((v) => String(v ?? "").trim() !== "").length;
+        const bestFilled = best
+          ? best.slice(1).filter((v) => String(v ?? "").trim() !== "").length
+          : -1;
+        return filled > bestFilled ? r : best;
+      }, null);
+
+  const out: unknown[][] = [];
+  let cursor: string | null = null;
+  headers.forEach((h, c) => {
+    const wd = weekdayIndex(h);
+    if (wd === null) return;
+    let date = cursor === null ? today : plusDays(cursor, 1);
+    while (mondayIndexOf(date) !== wd) date = plusDays(date, 1);
+    cursor = date;
+    const name = String(dinnerRow?.[c] ?? "").trim();
+    if (name) out.push([date, name]);
+  });
+  return { headers: ["Date", "Meal"], rows: out };
+}
+
 const HEADER_PATTERNS: [ColumnRole, RegExp][] = [
   ["date", /date|day|when/i],
   ["kcal", /kcal|calor|energy/i],

@@ -55,6 +55,7 @@ Every call made without asking, grouped by area.
 ## Import
 
 - Preview renders as stacked rows for one-handed use, not a wide table.
+- Weekly-grid sheets (weekday names across the header, meal slots down the side, dinners in a row labelled Tea, Dinner, Supper or Evening) are auto-detected and transposed: each weekday column resolves to its next upcoming date starting from today, later columns always advance, and a trailing repeat weekday lands the following week. Empty cells are skipped; Breakfast and Lunch rows are ignored because the import creates planned dinners. The resolved dates are shown in the preview for checking before commit.
 - Date parsing: JS Dates (SheetJS `cellDates`), Excel serials (epoch arithmetic, equivalent to `SSF.parse_date_code`), `dd/mm/yyyy` with UK day-first priority, and ISO. Month-first is used only when day-first is impossible.
 - Duplicate dates keep the last row by default, flagged and toggleable; the commit schema rejects duplicates outright.
 - Committing replaces only planned dinners on each date; logged meals are never touched.
