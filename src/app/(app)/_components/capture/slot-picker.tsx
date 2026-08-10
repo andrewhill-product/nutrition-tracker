@@ -60,7 +60,7 @@ export function SlotPicker({
               {labelUploading ? "Uploading label…" : "Label added. Tap to retake"}
             </>
           ) : (
-            <>📦 Add the box label (optional)</>
+            <>📦 Add the nutrition label (optional)</>
           )}
         </button>
       )}
