@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatShort, relativeLabel, todayLondon } from "@/lib/dates";
 import { fetchJson } from "@/lib/fetchJson";
 import type { RepeatWithItems } from "@/lib/queries";
-import type { AnalysisResultT, Slot } from "@/lib/schemas";
+import type { AnalysisItemT, AnalysisResultT, Slot } from "@/lib/schemas";
 import { SLOT_LABELS } from "@/lib/slots";
 import { ReviewScreen } from "../review/review-screen";
 import {
@@ -15,6 +15,7 @@ import {
   type ReviewDraft,
 } from "../review/types";
 import { ActionSheet, type CaptureAction } from "./action-sheet";
+import { AdditionsCard } from "./additions-card";
 import { AnalysingCard } from "./analysing-card";
 import { ErrorCard } from "./error-card";
 import { SlotPicker } from "./slot-picker";
@@ -27,6 +28,7 @@ type Step =
   | { step: "slot" }
   | { step: "repeats" }
   | { step: "analysing" }
+  | { step: "additions"; analysis: AnalysisResultT }
   | { step: "error"; message: string; retryable: boolean }
   | { step: "review"; draft: ReviewDraft };
 
@@ -73,6 +75,10 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const [uploading, setUploading] = useState(false);
   const [labelPreviewUrl, setLabelPreviewUrl] = useState<string | null>(null);
   const [labelUploading, setLabelUploading] = useState(false);
+  // Ingredients Andrew adds on the interstitial after a photo analysis.
+  const [additions, setAdditions] = useState<AnalysisItemT[]>([]);
+  const [addingIngredients, setAddingIngredients] = useState(false);
+  const [additionsError, setAdditionsError] = useState<string | null>(null);
 
   // The slot picker still shows, pre-selected from the deep link until tapped.
   const effectiveSlot = slot ?? urlSlot;
@@ -145,6 +151,9 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
     photoUrlRef.current = null;
     labelUploadRef.current = null;
     labelUrlRef.current = null;
+    setAdditions([]);
+    setAddingIngredients(false);
+    setAdditionsError(null);
     stripCaptureParams();
   }
 
@@ -306,13 +315,88 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
       });
       return;
     }
+    if (isPhoto) {
+      // Photo analyses pause on an interstitial so anything the photo missed
+      // (a drink, a dressing, a side out of frame) can be added and estimated
+      // before the review gate.
+      setAdditions([]);
+      setAdditionsError(null);
+      setState({ step: "additions", analysis: res.data });
+      return;
+    }
     setState({
       step: "review",
       draft: withConversion(
         draftFromAnalysis(res.data, {
           date,
           slot: effectiveSlot ?? "snack",
-          source: isPhoto ? "photo" : "manual",
+          source: "manual",
+          photoUrl: photoUrlRef.current,
+        })
+      ),
+    });
+  }
+
+  /**
+   * Estimate ingredients typed on the interstitial: the same /api/analyse in
+   * text mode, so additions arrive with full nutrients, count as real AI
+   * estimates for calibration, and still face the review gate. Returns
+   * whether the input box should clear.
+   */
+  async function estimateAdditions(text: string): Promise<boolean> {
+    setAddingIngredients(true);
+    setAdditionsError(null);
+    const res = await fetchJson<AnalysisResultT>("/api/analyse", {
+      method: "POST",
+      body: JSON.stringify({ mode: "text", description: text }),
+    });
+    setAddingIngredients(false);
+    if (cancelledRef.current) return false;
+    if (!res.ok) {
+      setAdditionsError(res.error);
+      return false;
+    }
+    if (res.data.items.length === 0) {
+      setAdditionsError(
+        "Claude could not make anything of that. Try rewording it."
+      );
+      return false;
+    }
+    setAdditions((prev) => [...prev, ...res.data.items]);
+    return true;
+  }
+
+  /**
+   * Cancelling at the additions step bins a fresh analysis, so it feeds the
+   * discard-learning loop like closing a draft review does. Best-effort and
+   * note-less ("binned without saying what it was"); never blocks the close.
+   */
+  function discardFromAdditions(analysis: AnalysisResultT) {
+    const summary = analysis.items
+      .map((i) => `${i.name} ${i.grams}g ${i.kcal} kcal`)
+      .join("; ");
+    void fetchJson("/api/discards", {
+      method: "POST",
+      body: JSON.stringify({
+        source: "photo",
+        ai_meal_name: (analysis.meal_name || "Meal").slice(0, 200),
+        ai_items_summary: (summary || "no items").slice(0, 2000),
+        note: null,
+      }),
+    });
+    reset();
+  }
+
+  /** Merge the photo analysis with any added ingredients and open review. */
+  function continueToReview(analysis: AnalysisResultT) {
+    const combined = { ...analysis, items: [...analysis.items, ...additions] };
+    setState({
+      step: "review",
+      draft: withConversion(
+        draftFromAnalysis(combined, {
+          date,
+          slot: effectiveSlot ?? "snack",
+          source: "photo",
           photoUrl: photoUrlRef.current,
         })
       ),
@@ -525,6 +609,20 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                   </div>
                 )}
                 {state.step === "analysing" && <AnalysingCard onCancel={reset} />}
+                {state.step === "additions" && (
+                  <AdditionsCard
+                    analysis={state.analysis}
+                    additions={additions}
+                    adding={addingIngredients}
+                    error={additionsError}
+                    onAdd={estimateAdditions}
+                    onRemoveAddition={(index) =>
+                      setAdditions((prev) => prev.filter((_, i) => i !== index))
+                    }
+                    onContinue={() => continueToReview(state.analysis)}
+                    onCancel={() => discardFromAdditions(state.analysis)}
+                  />
+                )}
                 {state.step === "error" && (
                   <ErrorCard
                     message={state.message}

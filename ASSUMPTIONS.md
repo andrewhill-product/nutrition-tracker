@@ -87,6 +87,12 @@ Every call made without asking, grouped by area.
 - The day boundary for scoring is the meal's stored date, which the user picks at capture; no 3am boundary shifting is applied because meals are bucketed explicitly, not by timestamp.
 - These design choices follow a research pass over MacroFactor, Cronometer, Lose It, MyFitnessPal and Apple Health patterns (direction-aware bars with a target tick, amber-never-red overruns, honest in-progress denominators, adherence-neutral trend framing with a 7 day rolling average).
 
+## Analyse model and the additions step
+
+- Analyse moved from Haiku 4.5 to Sonnet 5 at Andrew's request ("Haiku is getting everything wrong"). Sonnet 5 takes the structured-output format plus an optional effort level; analyse passes medium (Sonnet's default is high) to keep latency inside the mobile 55s cap, measured at ~12s for a text analysis. Sonnet has no refusal safety classifier, so the server-side fallback beta stays Opus-only (distil); the refusal branch is kept defensively. Distil stays on Opus 5.
+- After a photo analysis (including the planned-dinner conversion path), an interstitial lists what Claude found with per-item nutrients (kcal bold; protein, carbs, fat; portion description) and a running total, plus a box to add anything the photo missed. Additions are estimated by the same /api/analyse in text mode with no server changes, so they arrive with full nutrient breakdowns, count as genuine AI estimates for calibration, and face the same review gate as everything else. Added items can be removed again before review. Text quick-add skips the interstitial: the description box already covers it.
+- Cancelling at the interstitial bins a fresh analysis, so it posts a note-less discard record ("binned without saying what it was") to keep the discard-learning loop complete; recording is fire-and-forget and never blocks the close.
+
 ## Apple Health sync
 
 - Metric set was reviewed with Andrew: steps, active energy, resting energy, exercise minutes, resting heart rate, body weight and individual workouts are ingested; distance, flights, heart rate detail and sleep were ruled out as noise for a nutrition tracker. Resting energy is taken alongside active so "burned" can be shown honestly as a total rather than the active slice alone.

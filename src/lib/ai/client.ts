@@ -2,12 +2,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getEnv } from "@/lib/env";
 
 /**
- * Analyse runs on Haiku 4.5 to keep cost per image low (the review gate and
- * calibration corrections absorb the accuracy difference). Distil runs on
- * Opus 5: it fires rarely, and distilling real patterns from 50 corrections
- * is judgment work where a bad rule would skew every future estimate.
+ * Analyse runs on Sonnet 5: Haiku kept misreading meals, and on a handful of
+ * calls a day the accuracy is worth the cost. Distil runs on Opus 5: it fires
+ * rarely, and distilling real patterns from 50 corrections is judgment work
+ * where a bad rule would skew every future estimate.
  */
-export const ANALYSE_MODEL = "claude-haiku-4-5";
+export const ANALYSE_MODEL = "claude-sonnet-5";
 export const DISTIL_MODEL = "claude-opus-5";
 
 let client: Anthropic | null = null;
@@ -38,33 +38,24 @@ export async function callClaudeJson(opts: {
   schema: object;
   effort?: "low" | "medium" | "high";
 }): Promise<ClaudeJsonResult> {
-  // Opus 5 takes the refusal-fallback beta and an effort level (thinking is
-  // on by default; never pass the thinking param); Haiku rejects effort and
-  // does not use the fallback beta, so its call is the plain Messages API
-  // with just the structured-output format.
-  const params =
-    opts.model === DISTIL_MODEL
-      ? {
-          model: opts.model,
-          max_tokens: 16000,
-          betas: ["server-side-fallback-2026-07-01"],
-          fallbacks: "default",
-          output_config: {
-            effort: opts.effort ?? "medium",
-            format: { type: "json_schema", schema: opts.schema },
-          },
-          system: opts.system,
-          messages: opts.messages,
-        }
-      : {
-          model: opts.model,
-          max_tokens: 8192,
-          output_config: {
-            format: { type: "json_schema", schema: opts.schema },
-          },
-          system: opts.system,
-          messages: opts.messages,
-        };
+  // Both are Claude 5 models: thinking is adaptive and always on (never pass
+  // the thinking param), and non-default temperature/top_p are 400s. Effort
+  // is optional; Sonnet defaults to high, so analyse passes medium to keep
+  // latency inside the mobile 55s cap. Only Opus takes the refusal-fallback
+  // beta: it has the safety classifier that can refuse, Sonnet does not.
+  const params = {
+    model: opts.model,
+    max_tokens: 16000,
+    ...(opts.model === DISTIL_MODEL
+      ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }
+      : {}),
+    output_config: {
+      effort: opts.effort ?? "medium",
+      format: { type: "json_schema", schema: opts.schema },
+    },
+    system: opts.system,
+    messages: opts.messages,
+  };
   const res = (await getClient().beta.messages.create(
     params as unknown as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming
   )) as unknown as { stop_reason: string | null; content: ContentBlock[] };
