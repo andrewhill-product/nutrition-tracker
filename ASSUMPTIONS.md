@@ -11,7 +11,7 @@ Every call made without asking, grouped by area.
 ## Settled defaults
 
 - Europe/London defines "today"; dates are stored as `YYYY-MM-DD` strings; one photo per meal.
-- Slots are breakfast, lunch, dinner, snack and drink; "dinner" is stored in the database but displayed as "Tea" everywhere (Andrew's vocabulary, matching his meal-plan sheet). Labels live in src/lib/slots.ts. The whole Today screen swipes between days (left = next, right = previous) with a horizontal-intent guard so vertical scrolling never changes the day.
+- Slots are breakfast, lunch, dinner, snack and drink; "dinner" is stored in the database but displayed as "Tea" everywhere (Andrew's vocabulary, matching his meal-plan sheet). Labels live in src/lib/slots.ts. The whole Today screen swipes between days (left = next, right = previous): the page follows the finger once horizontal intent is clear (touch-action pan-y keeps vertical scrolling native), springs back below a 70px commit threshold, and on commit the old day slides out while the new one slides in from the matching side.
 - Week runs Monday to Sunday; both Today and Week page backwards and forwards.
 - Dark mode follows the system (`prefers-color-scheme`); no in-app toggle.
 - Layout tuned at 430x932 (iPhone Pro Max) with safe-area padding; usable on any phone width.
