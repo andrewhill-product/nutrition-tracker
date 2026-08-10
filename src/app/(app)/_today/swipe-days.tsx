@@ -30,11 +30,21 @@ export function SwipeDays({
   const active = useRef(false);
   const committed = useRef(false);
 
-  // Entrance: slide in from the side the swipe implied.
+  // Reset and enter on every date change. Next.js REUSES this DOM node when
+  // only ?date= changes (no remount), so the forwards-filled exit animation
+  // and the committed flag would otherwise survive into the new day, leaving
+  // the page half slid out and all further swipes blocked.
   useEffect(() => {
-    const dir = enterFrom;
     const el = box.current;
-    if (dir === null || !el) return;
+    if (!el) return;
+    committed.current = false;
+    start.current = null;
+    active.current = false;
+    for (const a of el.getAnimations()) a.cancel();
+    el.style.transform = "";
+    el.style.opacity = "";
+    const dir = enterFrom;
+    if (dir === null) return;
     enterFrom = null;
     const travel = Math.min(el.clientWidth * 0.35, 160);
     el.animate(
@@ -64,6 +74,7 @@ export function SwipeDays({
   return (
     <div
       ref={box}
+      className="min-h-dvh"
       style={{ touchAction: "pan-y" }}
       onTouchStart={(e) => {
         if (committed.current) return;
@@ -116,6 +127,15 @@ export function SwipeDays({
           { duration: 170, easing: "ease-in", fill: "forwards" }
         );
         go(addDays(date, dx > 0 ? -1 : 1));
+        // Safety valve: if navigation never lands (offline, error), unfreeze.
+        window.setTimeout(() => {
+          if (committed.current && el.isConnected) {
+            committed.current = false;
+            for (const a of el.getAnimations()) a.cancel();
+            el.style.transform = "";
+            el.style.opacity = "";
+          }
+        }, 1500);
       }}
       onTouchCancel={() => {
         const el = box.current;
