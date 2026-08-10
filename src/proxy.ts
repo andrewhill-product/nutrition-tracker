@@ -21,6 +21,8 @@ export default async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!login|api/login|_next/static|_next/image|favicon\\.ico|icon\\.svg|icons/|manifest\\.webmanifest|sw\\.js|offline).*)",
+    // api/activity/ingest is bearer-authed in its route handler: the iPhone
+    // Shortcuts automation that posts Apple Health data cannot hold a cookie.
+    "/((?!login|api/login|api/activity/ingest|_next/static|_next/image|favicon\\.ico|icon\\.svg|icons/|manifest\\.webmanifest|sw\\.js|offline).*)",
   ],
 };

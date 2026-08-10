@@ -1,8 +1,10 @@
 import type {
   CalibrationNote,
+  DailyActivity,
   DiscardedAnalysis,
   MealItem,
   Targets,
+  Workout,
 } from "@/db/schema";
 import type { MealWithItems } from "./totals";
 
@@ -41,14 +43,17 @@ function mealItemRow(meal: MealWithItems, item: MealItem): string {
 }
 
 /**
- * One CSV, three labelled sections (meals x items, targets, calibration notes),
- * separated by blank lines. UTF-8 BOM so Excel opens it correctly.
+ * One CSV with labelled sections (meals x items, targets, calibration notes,
+ * discarded analyses, Apple Health daily activity and workouts), separated by
+ * blank lines. UTF-8 BOM so Excel opens it correctly.
  */
 export function buildExportCsv(
   meals: MealWithItems[],
   targetsRow: Targets,
   notes: CalibrationNote[],
-  discards: DiscardedAnalysis[] = []
+  discards: DiscardedAnalysis[] = [],
+  activity: DailyActivity[] = [],
+  workouts: Workout[] = []
 ): string {
   const lines: string[] = [];
   lines.push("# meals");
@@ -75,6 +80,28 @@ export function buildExportCsv(
     lines.push(
       row([d.id, d.source, d.aiMealName, d.aiItemsSummary, d.note, d.createdAt.toISOString()])
     );
+  }
+  lines.push("");
+  lines.push("# daily_activity");
+  lines.push(
+    row([
+      "date", "steps", "active_kcal", "resting_kcal", "exercise_minutes",
+      "resting_hr", "weight_kg", "received_at",
+    ])
+  );
+  for (const a of activity) {
+    lines.push(
+      row([
+        a.date, a.steps, a.activeKcal, a.restingKcal, a.exerciseMinutes,
+        a.restingHr, a.weightKg, a.receivedAt.toISOString(),
+      ])
+    );
+  }
+  lines.push("");
+  lines.push("# workouts");
+  lines.push(row(["id", "date", "activity_type", "duration_min", "active_kcal", "started_at"]));
+  for (const w of workouts) {
+    lines.push(row([w.id, w.date, w.activityType, w.durationMin, w.activeKcal, w.startedAt]));
   }
   return "\uFEFF" + lines.join("\r\n") + "\r\n";
 }

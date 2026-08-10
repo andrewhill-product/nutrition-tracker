@@ -1,6 +1,7 @@
 import { addDays, formatShort, isDateString, mondayOf, todayLondon } from "@/lib/dates";
-import { getTargets, getWeek } from "@/lib/queries";
+import { getActivityRange, getTargets, getWeek, getWorkoutsRange } from "@/lib/queries";
 import { dayTotals } from "@/lib/totals";
+import { ActivitySummary } from "./activity-summary";
 import { KcalTrendChart, type DayBar } from "./kcal-trend-chart";
 import { MacroSplitCard } from "./macro-split-card";
 import { PlannedVsActual } from "./planned-vs-actual";
@@ -20,7 +21,13 @@ export default async function WeekPage({
       ? mondayOf(params.start)
       : mondayOf(today);
 
-  const [meals, targets] = await Promise.all([getWeek(start), getTargets()]);
+  const end = addDays(start, 6);
+  const [meals, targets, activityDays, weekWorkouts] = await Promise.all([
+    getWeek(start),
+    getTargets(),
+    getActivityRange(start, end),
+    getWorkoutsRange(start, end),
+  ]);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(start, i));
 
   const perDay = dates.map((date) => {
@@ -56,6 +63,11 @@ export default async function WeekPage({
           fat={avg((t) => t.fat_g)}
           fibre={avg((t) => t.fibre_g)}
           daysCounted={countedDays.length}
+        />
+        <ActivitySummary
+          days={activityDays}
+          workouts={weekWorkouts}
+          showWeight={targets.showWeight}
         />
         <PlannedVsActual dates={dates} meals={meals} today={today} />
       </div>

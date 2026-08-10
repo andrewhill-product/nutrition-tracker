@@ -1,7 +1,14 @@
 import { asc, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { calibrationNotes, discardedAnalyses, mealItems, meals } from "@/db/schema";
+import {
+  calibrationNotes,
+  dailyActivity,
+  discardedAnalyses,
+  mealItems,
+  meals,
+  workouts,
+} from "@/db/schema";
 import { buildExportCsv } from "@/lib/csv";
 import { todayLondon } from "@/lib/dates";
 import { getTargets } from "@/lib/queries";
@@ -25,12 +32,14 @@ export async function GET() {
     ...meal,
     items: items.filter((i) => i.mealId === meal.id),
   }));
-  const [targetsRow, notes, discards] = await Promise.all([
+  const [targetsRow, notes, discards, activityRows, workoutRows] = await Promise.all([
     getTargets(),
     db.select().from(calibrationNotes).orderBy(asc(calibrationNotes.id)),
     db.select().from(discardedAnalyses).orderBy(asc(discardedAnalyses.id)),
+    db.select().from(dailyActivity).orderBy(asc(dailyActivity.date)),
+    db.select().from(workouts).orderBy(asc(workouts.date), asc(workouts.id)),
   ]);
-  const csv = buildExportCsv(withItems, targetsRow, notes, discards);
+  const csv = buildExportCsv(withItems, targetsRow, notes, discards, activityRows, workoutRows);
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

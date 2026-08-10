@@ -87,6 +87,15 @@ Every call made without asking, grouped by area.
 - The day boundary for scoring is the meal's stored date, which the user picks at capture; no 3am boundary shifting is applied because meals are bucketed explicitly, not by timestamp.
 - These design choices follow a research pass over MacroFactor, Cronometer, Lose It, MyFitnessPal and Apple Health patterns (direction-aware bars with a target tick, amber-never-red overruns, honest in-progress denominators, adherence-neutral trend framing with a 7 day rolling average).
 
+## Apple Health sync
+
+- Metric set was reviewed with Andrew: steps, active energy, resting energy, exercise minutes, resting heart rate, body weight and individual workouts are ingested; distance, flights, heart rate detail and sleep were ruled out as noise for a nutrition tracker. Resting energy is taken alongside active so "burned" can be shown honestly as a total rather than the active slice alone.
+- Apple Health has no cloud API, so data is pushed from the phone by a Shortcuts automation (docs/APPLE-HEALTH.md) to POST /api/activity/ingest. The route is bearer-authed with APP_PASSWORD (Shortcuts cannot hold the session cookie) and exempted from cookie auth in the proxy matcher; no new environment variable was added.
+- Every metric is nullable end to end at Andrew's request ("make sure the app doesn't break if it doesn't have all the data"): Watch-less days send steps alone, cards render only the fields present, and a day with no data renders no Activity card at all. Ingest merges rather than replaces (COALESCE per column), so a null never overwrites a stored value and re-runs are idempotent; the workouts array replaces per date, with an absent key leaving stored workouts untouched. The flip side is documented: a wrong non-null value is corrected by re-pushing, not clearable to blank over the API.
+- Numbers are coerced from text and blanks are treated as missing, because Shortcuts renders absent samples as empty strings. Values are rounded server-side (weight to 0.1 kg).
+- Weight is expected roughly monthly, so it appears as a dated reading (Today card and latest-in-week line), not a trend chart; a Settings toggle (targets.show_weight) hides it everywhere. Copy stays descriptive: "Ate X kcal, burned Y kcal" with no earned-calories or compensation framing, matching the Home screen rules.
+- Individual workouts come from the Workout app via Find Workouts in the same shortcut: type, duration, active kcal and start time, listed on the day's Activity card and counted on the Week card. daily_activity and workouts are exported as fifth and sixth CSV sections.
+
 ## UI and PWA
 
 - Hand-rolled SVG kcal ring and macro bars; Recharts only for the week chart (client leaf, renders after mount).

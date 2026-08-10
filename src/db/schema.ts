@@ -78,6 +78,8 @@ export const targets = pgTable("targets", {
   // which sugars'); the UK label reference intake is 90g a day. The NHS 30g
   // limit is for free sugars, which labels do not declare separately.
   sugarG: integer("sugar_g").notNull().default(90),
+  // Whether body weight from Apple Health appears anywhere in the UI.
+  showWeight: boolean("show_weight").notNull().default(true),
 });
 
 /**
@@ -123,6 +125,39 @@ export const discardedAnalyses = pgTable("discarded_analyses", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * One row per day of Apple Health data, pushed by an iPhone Shortcuts
+ * automation (see docs/APPLE-HEALTH.md). Every metric is nullable: days
+ * without the Watch have steps only, and nothing here may break when absent.
+ */
+export const dailyActivity = pgTable("daily_activity", {
+  date: date("date", { mode: "string" }).primaryKey(),
+  steps: integer("steps"),
+  activeKcal: integer("active_kcal"),
+  restingKcal: integer("resting_kcal"),
+  exerciseMinutes: integer("exercise_minutes"),
+  restingHr: integer("resting_hr"),
+  weightKg: real("weight_kg"),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Individual workouts from the Workout app, replaced wholesale per date on
+ * each ingest so re-running the shortcut never duplicates rows.
+ */
+export const workouts = pgTable(
+  "workouts",
+  {
+    id: serial("id").primaryKey(),
+    date: date("date", { mode: "string" }).notNull(),
+    activityType: text("activity_type").notNull(),
+    durationMin: integer("duration_min").notNull(),
+    activeKcal: integer("active_kcal"),
+    startedAt: text("started_at"),
+  },
+  (t) => [index("workouts_date_idx").on(t.date)]
+);
+
 export const calibrationNotes = pgTable("calibration_notes", {
   id: serial("id").primaryKey(),
   note: text("note").notNull(),
@@ -137,3 +172,5 @@ export type CalibrationNote = typeof calibrationNotes.$inferSelect;
 export type DiscardedAnalysis = typeof discardedAnalyses.$inferSelect;
 export type Repeat = typeof repeats.$inferSelect;
 export type RepeatItem = typeof repeatItems.$inferSelect;
+export type DailyActivity = typeof dailyActivity.$inferSelect;
+export type Workout = typeof workouts.$inferSelect;

@@ -2,15 +2,19 @@ import { and, asc, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   calibrationNotes,
+  dailyActivity,
   mealItems,
   meals,
   repeatItems,
   repeats,
   targets,
+  workouts,
   type CalibrationNote,
+  type DailyActivity,
   type Repeat,
   type RepeatItem,
   type Targets,
+  type Workout,
 } from "@/db/schema";
 import { addDays } from "./dates";
 import type { MealWithItems } from "./totals";
@@ -74,6 +78,7 @@ export async function getTargets(): Promise<Targets> {
       fatG: 75,
       fibreG: 30,
       sugarG: 90,
+      showWeight: true,
     }
   );
 }
@@ -108,6 +113,45 @@ export async function getRecentPhotoMeals(limit = 8) {
     .where(and(eq(meals.status, "logged"), isNotNull(meals.photoUrl)))
     .orderBy(desc(meals.date), desc(meals.id))
     .limit(limit);
+}
+
+export type DayActivity = { activity: DailyActivity | null; workouts: Workout[] };
+
+/** Apple Health data for one day; both parts empty when nothing has synced. */
+export async function getActivityDay(date: string): Promise<DayActivity> {
+  const [rows, workoutRows] = await Promise.all([
+    db.select().from(dailyActivity).where(eq(dailyActivity.date, date)).limit(1),
+    db.select().from(workouts).where(eq(workouts.date, date)).orderBy(asc(workouts.id)),
+  ]);
+  return { activity: rows[0] ?? null, workouts: workoutRows };
+}
+
+/** Apple Health daily rows in an inclusive date range. */
+export async function getActivityRange(start: string, end: string): Promise<DailyActivity[]> {
+  return db
+    .select()
+    .from(dailyActivity)
+    .where(and(gte(dailyActivity.date, start), lte(dailyActivity.date, end)))
+    .orderBy(asc(dailyActivity.date));
+}
+
+/** Workouts in an inclusive date range. */
+export async function getWorkoutsRange(start: string, end: string): Promise<Workout[]> {
+  return db
+    .select()
+    .from(workouts)
+    .where(and(gte(workouts.date, start), lte(workouts.date, end)))
+    .orderBy(asc(workouts.date), asc(workouts.id));
+}
+
+/** When Apple Health data last arrived, or null if it never has. */
+export async function getActivityLastSync(): Promise<Date | null> {
+  const rows = await db
+    .select({ receivedAt: dailyActivity.receivedAt })
+    .from(dailyActivity)
+    .orderBy(desc(dailyActivity.receivedAt))
+    .limit(1);
+  return rows[0]?.receivedAt ?? null;
 }
 
 /** Dates that already have a planned dinner (import shows a replaces flag). */

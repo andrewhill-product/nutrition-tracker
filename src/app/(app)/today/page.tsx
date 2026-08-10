@@ -1,6 +1,7 @@
 import { isDateString, todayLondon } from "@/lib/dates";
-import { getDay, getTargets } from "@/lib/queries";
+import { getActivityDay, getDay, getTargets } from "@/lib/queries";
 import { dayTotals } from "@/lib/totals";
+import { ActivityCard } from "../_today/activity-card";
 import { DateHeader } from "../_today/date-header";
 import { SwipeDays } from "../_today/swipe-days";
 import { KcalRing } from "../_today/kcal-ring";
@@ -28,7 +29,11 @@ export default async function TodayPage({
   const date =
     params.date && isDateString(params.date) ? params.date : todayLondon();
 
-  const [meals, targets] = await Promise.all([getDay(date), getTargets()]);
+  const [meals, targets, activityDay] = await Promise.all([
+    getDay(date),
+    getTargets(),
+    getActivityDay(date),
+  ]);
   const totals = dayTotals(meals);
   const logged = meals.filter((m) => m.status === "logged");
   const planned = meals.filter((m) => m.status === "planned");
@@ -53,6 +58,13 @@ export default async function TodayPage({
             fibre: targets.fibreG,
             sugar: targets.sugarG,
           }}
+        />
+
+        <ActivityCard
+          activity={activityDay.activity}
+          workouts={activityDay.workouts}
+          eatenKcal={totals.kcal}
+          showWeight={targets.showWeight}
         />
 
         {logged.length === 0 && planned.length === 0 && (
