@@ -11,7 +11,8 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-export const slotEnum = pgEnum("slot", ["breakfast", "lunch", "dinner", "snack"]);
+// "dinner" is displayed as "Tea" throughout the UI (src/lib/slots.ts).
+export const slotEnum = pgEnum("slot", ["breakfast", "lunch", "dinner", "snack", "drink"]);
 export const sourceEnum = pgEnum("source", ["photo", "spreadsheet", "manual"]);
 export const statusEnum = pgEnum("status", ["logged", "planned"]);
 export const verdictEnum = pgEnum("verdict", ["up", "edited", "removed"]);

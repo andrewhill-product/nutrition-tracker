@@ -54,7 +54,7 @@ export function PlannedVsActual({
 
   return (
     <div className="space-y-2 rounded-2xl border border-line bg-surface p-4">
-      <h2 className="font-semibold">Planned vs actual dinners</h2>
+      <h2 className="font-semibold">Tea: planned vs actual</h2>
       <div className="divide-y divide-line">
         {rows.map((row) => (
           <Link

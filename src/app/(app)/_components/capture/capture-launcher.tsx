@@ -7,6 +7,7 @@ import { formatShort, relativeLabel, todayLondon } from "@/lib/dates";
 import { fetchJson } from "@/lib/fetchJson";
 import type { RepeatWithItems } from "@/lib/queries";
 import type { AnalysisResultT, Slot } from "@/lib/schemas";
+import { SLOT_LABELS } from "@/lib/slots";
 import { ReviewScreen } from "../review/review-screen";
 import {
   draftFromAnalysis,
@@ -29,15 +30,12 @@ type Step =
   | { step: "error"; message: string; retryable: boolean }
   | { step: "review"; draft: ReviewDraft };
 
-const SLOT_LABEL: Record<Slot, string> = {
-  breakfast: "Breakfast",
-  lunch: "Lunch",
-  dinner: "Dinner",
-  snack: "Snack",
-};
-
 function parseSlot(value: string | null): Slot | null {
-  return value === "breakfast" || value === "lunch" || value === "dinner" || value === "snack"
+  return value === "breakfast" ||
+    value === "lunch" ||
+    value === "dinner" ||
+    value === "snack" ||
+    value === "drink"
     ? value
     : null;
 }
@@ -412,7 +410,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                       >
                         <div className="min-w-0">
                           <p className="truncate font-semibold">{r.name}</p>
-                          <p className="text-xs text-muted">{SLOT_LABEL[r.slot]}</p>
+                          <p className="text-xs text-muted">{SLOT_LABELS[r.slot]}</p>
                         </div>
                         <span className="tnum shrink-0 font-bold">
                           {busyRepeatId === r.id

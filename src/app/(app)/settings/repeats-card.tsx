@@ -3,13 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { RepeatWithItems } from "@/lib/queries";
 import { fetchJson } from "@/lib/fetchJson";
-
-const SLOT_LABEL: Record<string, string> = {
-  breakfast: "Breakfast",
-  lunch: "Lunch",
-  dinner: "Dinner",
-  snack: "Snack",
-};
+import { SLOT_LABELS } from "@/lib/slots";
 
 export function RepeatsCard({ repeats }: { repeats: RepeatWithItems[] }) {
   const router = useRouter();
@@ -33,7 +27,7 @@ export function RepeatsCard({ repeats }: { repeats: RepeatWithItems[] }) {
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{r.name}</p>
                 <p className="tnum text-xs text-muted">
-                  {SLOT_LABEL[r.slot]} · {r.items.reduce((s, i) => s + i.kcal, 0)} kcal
+                  {SLOT_LABELS[r.slot]} · {r.items.reduce((s, i) => s + i.kcal, 0)} kcal
                 </p>
               </div>
               <button

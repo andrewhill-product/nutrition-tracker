@@ -2,16 +2,15 @@
 
 import { formatShort, relativeLabel } from "@/lib/dates";
 import type { Slot } from "@/lib/schemas";
+import { SLOT_LABELS, SLOT_LIST } from "@/lib/slots";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { PhotoPreview } from "./photo-preview";
 
-const SLOTS: { value: Slot; label: string }[] = [
-  { value: "breakfast", label: "Breakfast" },
-  { value: "lunch", label: "Lunch" },
-  { value: "dinner", label: "Dinner" },
-  { value: "snack", label: "Snack" },
-];
+const SLOTS: { value: Slot; label: string }[] = SLOT_LIST.map((value) => ({
+  value,
+  label: SLOT_LABELS[value],
+}));
 
 /** Always shown before analysis, photo and text paths alike. */
 export function SlotPicker({

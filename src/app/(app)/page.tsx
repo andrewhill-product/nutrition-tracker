@@ -2,6 +2,7 @@ import { isDateString, todayLondon } from "@/lib/dates";
 import { getDay, getTargets } from "@/lib/queries";
 import { dayTotals } from "@/lib/totals";
 import { DateHeader } from "./_today/date-header";
+import { SwipeDays } from "./_today/swipe-days";
 import { KcalRing } from "./_today/kcal-ring";
 import { MacroBars } from "./_today/macro-bars";
 import { MealCard } from "./_today/meal-card";
@@ -13,8 +14,9 @@ export const dynamic = "force-dynamic";
 const SLOTS = [
   { value: "breakfast", label: "Breakfast" },
   { value: "lunch", label: "Lunch" },
-  { value: "dinner", label: "Dinner" },
+  { value: "dinner", label: "Tea" },
   { value: "snack", label: "Snacks" },
+  { value: "drink", label: "Drinks" },
 ] as const;
 
 export default async function TodayPage({
@@ -32,7 +34,7 @@ export default async function TodayPage({
   const planned = meals.filter((m) => m.status === "planned");
 
   return (
-    <div>
+    <SwipeDays date={date}>
       <DateHeader date={date} />
       <div className="space-y-6 px-4 py-5">
         <KcalRing kcal={totals.kcal} target={targets.kcal} />
@@ -78,6 +80,6 @@ export default async function TodayPage({
           );
         })}
       </div>
-    </div>
+    </SwipeDays>
   );
 }

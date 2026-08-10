@@ -5,13 +5,7 @@
 import { useState } from "react";
 import { formatShort } from "@/lib/dates";
 import type { Slot } from "@/lib/schemas";
-
-const SLOT_LABEL: Record<Slot, string> = {
-  breakfast: "Breakfast",
-  lunch: "Lunch",
-  dinner: "Dinner",
-  snack: "Snack",
-};
+import { SLOT_LABELS } from "@/lib/slots";
 
 export function ReviewHeader({
   name,
@@ -65,7 +59,7 @@ export function ReviewHeader({
         )}
         <div className="flex gap-2 text-sm">
           <span className="rounded-full bg-surface2 px-3 py-1.5 font-medium">
-            {SLOT_LABEL[slot]}
+            {SLOT_LABELS[slot]}
           </span>
           <span className="rounded-full bg-surface2 px-3 py-1.5 font-medium">
             {formatShort(date)}

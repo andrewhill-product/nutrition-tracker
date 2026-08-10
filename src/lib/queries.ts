@@ -28,7 +28,7 @@ async function withItems(rows: (typeof meals.$inferSelect)[]): Promise<MealWithI
   }));
 }
 
-const SLOT_ORDER = { breakfast: 0, lunch: 1, dinner: 2, snack: 3 } as const;
+const SLOT_ORDER = { breakfast: 0, lunch: 1, dinner: 2, snack: 3, drink: 4 } as const;
 
 /** All meals for a date, logged and planned, slot-ordered. */
 export async function getDay(date: string): Promise<MealWithItems[]> {
