@@ -37,11 +37,36 @@ export default async function WeekPage({
     return { date, totals, hasLogged };
   });
 
-  const bars: DayBar[] = perDay.map((d) => ({
-    date: d.date,
-    label: formatShort(d.date).slice(0, 3),
-    kcal: Math.round(d.totals.kcal),
-  }));
+  // Split each day's kcal by macro energy shares (4/4/9 kcal per gram),
+  // normalised so the stack still sums to the actual logged kcal. Days with
+  // kcal but no macro data fall into a single neutral "other" segment.
+  const bars: DayBar[] = perDay.map((d) => {
+    const kcal = Math.round(d.totals.kcal);
+    const pE = d.totals.protein_g * 4;
+    const cE = d.totals.carbs_g * 4;
+    const fE = d.totals.fat_g * 9;
+    const macroSum = pE + cE + fE;
+    let protein = 0;
+    let carbs = 0;
+    let fat = 0;
+    let other = 0;
+    if (macroSum > 0 && kcal > 0) {
+      protein = Math.round((pE / macroSum) * kcal);
+      carbs = Math.round((cE / macroSum) * kcal);
+      fat = Math.max(0, kcal - protein - carbs);
+    } else {
+      other = kcal;
+    }
+    return {
+      date: d.date,
+      label: formatShort(d.date).slice(0, 3),
+      kcal,
+      protein,
+      carbs,
+      fat,
+      other,
+    };
+  });
 
   const countedDays = perDay.filter((d) => d.hasLogged);
   const avg = (pick: (t: (typeof perDay)[0]["totals"]) => number) =>
