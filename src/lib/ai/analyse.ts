@@ -8,7 +8,7 @@ import {
   type AnalyseRequestT,
   type AnalysisResultT,
 } from "@/lib/schemas";
-import { callClaudeJson, stripFences } from "./client";
+import { ANALYSE_MODEL, callClaudeJson, stripFences } from "./client";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchemas";
 import { buildAnalyseSystem } from "./prompts";
 
@@ -66,10 +66,10 @@ export async function runAnalyse(req: AnalyseRequestT): Promise<AnalyseOutcome> 
     let result;
     try {
       result = await callClaudeJson({
+        model: ANALYSE_MODEL,
         system,
         messages,
         schema: ANALYSIS_JSON_SCHEMA,
-        effort: "low",
       });
     } catch (err) {
       console.error("[analyse] API error", err);

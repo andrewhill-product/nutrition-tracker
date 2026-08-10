@@ -1,7 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getEnv } from "@/lib/env";
 
-export const MODEL = "claude-fable-5";
+/**
+ * Analyse runs on Haiku 4.5 at Andrew's request to cut cost per image (about
+ * 10x cheaper per token than Fable, no thinking overhead); the review gate
+ * and calibration corrections absorb the accuracy difference. Distil stays on
+ * Fable: it runs rarely and distilling patterns from 50 corrections is
+ * judgment work.
+ */
+export const ANALYSE_MODEL = "claude-haiku-4-5";
+export const DISTIL_MODEL = "claude-fable-5";
 
 let client: Anthropic | null = null;
 
@@ -25,23 +33,38 @@ type ContentBlock = { type: string; text?: string };
  * which the SDK types may lag behind.
  */
 export async function callClaudeJson(opts: {
+  model: string;
   system: string;
   messages: unknown[];
   schema: object;
-  effort: "low" | "medium" | "high";
+  effort?: "low" | "medium" | "high";
 }): Promise<ClaudeJsonResult> {
-  const params = {
-    model: MODEL,
-    max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: {
-      effort: opts.effort,
-      format: { type: "json_schema", schema: opts.schema },
-    },
-    system: opts.system,
-    messages: opts.messages,
-  };
+  // Fable takes the refusal-fallback beta and an effort level; Haiku rejects
+  // effort and does not use the fallback beta, so its call is the plain
+  // Messages API with just the structured-output format.
+  const params =
+    opts.model === DISTIL_MODEL
+      ? {
+          model: opts.model,
+          max_tokens: 16000,
+          betas: ["server-side-fallback-2026-07-01"],
+          fallbacks: "default",
+          output_config: {
+            effort: opts.effort ?? "medium",
+            format: { type: "json_schema", schema: opts.schema },
+          },
+          system: opts.system,
+          messages: opts.messages,
+        }
+      : {
+          model: opts.model,
+          max_tokens: 8192,
+          output_config: {
+            format: { type: "json_schema", schema: opts.schema },
+          },
+          system: opts.system,
+          messages: opts.messages,
+        };
   const res = (await getClient().beta.messages.create(
     params as unknown as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming
   )) as unknown as { stop_reason: string | null; content: ContentBlock[] };

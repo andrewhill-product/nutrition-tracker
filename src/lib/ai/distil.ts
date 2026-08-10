@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { calibrationNotes, type CalibrationNote } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getCorrectionsForDistil } from "@/lib/calibration";
-import { callClaudeJson, stripFences } from "./client";
+import { callClaudeJson, DISTIL_MODEL, stripFences } from "./client";
 import { DISTIL_JSON_SCHEMA } from "./jsonSchemas";
 import { buildDistilUser, DISTIL_SYSTEM } from "./prompts";
 
@@ -37,6 +37,7 @@ export async function runDistil(): Promise<DistilOutcome> {
     let result;
     try {
       result = await callClaudeJson({
+        model: DISTIL_MODEL,
         system: DISTIL_SYSTEM,
         messages,
         schema: DISTIL_JSON_SCHEMA,
