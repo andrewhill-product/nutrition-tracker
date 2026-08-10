@@ -84,15 +84,20 @@ export function ItemCard({
   return (
     <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold">
-            {item.name}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <input
+              value={item.name}
+              onChange={(e) => onChange({ ...item, name: e.target.value })}
+              aria-label="Item name"
+              className="h-9 w-full min-w-0 rounded-lg border border-transparent bg-transparent font-semibold outline-none focus:border-line focus:bg-surface2/50 focus:px-2"
+            />
             {lowConfidence && (
-              <span className="ml-2 rounded-full bg-amber-soft px-2 py-0.5 text-[11px] font-medium text-amber-ink">
+              <span className="shrink-0 rounded-full bg-amber-soft px-2 py-0.5 text-[11px] font-medium text-amber-ink">
                 Low confidence
               </span>
             )}
-          </p>
+          </div>
           {item.ai.portionDesc && (
             <p className="text-sm text-muted">{item.ai.portionDesc}</p>
           )}

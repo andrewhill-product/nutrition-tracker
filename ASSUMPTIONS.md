@@ -24,6 +24,7 @@ Every call made without asking, grouped by area.
 - Removed items stay in the save payload and the DB (calibration data). On update, DB rows with verdict `removed` that the client did not send are re-inserted unchanged so calibration history cannot be lost by the client.
 - A manual item (typed name, grams and values) is saved as verdict `edited` with `ai_*` NULL: the human supplied the numbers, so nothing needed accepting.
 - "Estimate macros" on an added item uses analyse text mode and still requires a verdict.
+- Item names are editable directly on the review card. The item editor offers "Suggest values from name" with an optional Small, Medium or Large size (asked because cup and portion size drives drink calories): it re-runs analyse text mode on the renamed item and replaces the item's AI estimate and finals, so Accept, gram scaling and calibration behave exactly as for a fresh analysis. The analyse prompt also instructs that prepared drinks and dishes are named as themselves (a latte, not espresso plus foamed milk).
 - Confidence is surfaced only as a "Low confidence" badge below 0.6; raw scores are never shown.
 - When the last non-removed item is removed, Save is replaced by "All items removed. Delete the meal instead?".
 

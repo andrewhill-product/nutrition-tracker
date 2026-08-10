@@ -1,9 +1,20 @@
 "use client";
 
+import { useState } from "react";
+import { fetchJson } from "@/lib/fetchJson";
+import type { AnalysisResultT } from "@/lib/schemas";
 import { Button } from "../ui/button";
+import { Chip } from "../ui/chip";
 import { Stepper } from "../ui/stepper";
 import { MacroField } from "./macro-field";
 import { scaleFinals, type MacroKey, type ReviewItem } from "./types";
+
+type SuggestSize = "small" | "medium" | "large";
+const SIZES: { value: SuggestSize; label: string }[] = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+];
 
 const MACROS: { key: Exclude<MacroKey, "kcal">; label: string }[] = [
   { key: "protein", label: "Protein" },
@@ -26,8 +37,60 @@ export function ItemEditor({
   onChange: (item: ReviewItem) => void;
   onDone: () => void;
 }) {
+  const [size, setSize] = useState<SuggestSize | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
   const canScale = item.ai.grams !== null && item.ai.grams > 0;
   const valid = item.final.grams !== null && item.final.kcal !== null;
+
+  /**
+   * Re-estimate this item from its (possibly renamed) name, with an optional
+   * size for accuracy. The result becomes the item's new AI estimate, so
+   * Accept, scaling and calibration all work as for a fresh analysis.
+   */
+  async function suggestFromName() {
+    const name = item.name.trim();
+    if (!name || suggesting) return;
+    setSuggesting(true);
+    setSuggestError(null);
+    const res = await fetchJson<AnalysisResultT>("/api/analyse", {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "text",
+        description: size ? `a ${size} ${name}` : `a typical ${name}`,
+      }),
+    });
+    setSuggesting(false);
+    if (!res.ok || res.data.items.length === 0) {
+      setSuggestError("Could not suggest values. Try again or enter them yourself.");
+      return;
+    }
+    const s = res.data.items[0];
+    onChange({
+      ...item,
+      ai: {
+        portionDesc: s.portion_desc,
+        grams: s.grams,
+        kcal: s.kcal,
+        protein: s.protein_g,
+        carbs: s.carbs_g,
+        fat: s.fat_g,
+        fibre: s.fibre_g,
+        sugar: s.sugar_g,
+        confidence: s.confidence,
+      },
+      final: {
+        grams: s.grams,
+        kcal: s.kcal,
+        protein: s.protein_g,
+        carbs: s.carbs_g,
+        fat: s.fat_g,
+        fibre: s.fibre_g,
+        sugar: s.sugar_g,
+      },
+      overridden: {},
+    });
+  }
 
   function setGrams(grams: number) {
     onChange({ ...item, final: scaleFinals(item, grams) });
@@ -84,6 +147,32 @@ export function ItemEditor({
             onReset={() => resetMacro(m.key)}
           />
         ))}
+      </div>
+      <div className="space-y-2 rounded-xl border border-dashed border-line p-3">
+        <p className="text-sm text-muted">
+          Wrong item? Rename it above, say how big it was, and get fresh values.
+        </p>
+        <div className="flex gap-2">
+          {SIZES.map((s) => (
+            <Chip
+              key={s.value}
+              selected={size === s.value}
+              onClick={() => setSize(size === s.value ? null : s.value)}
+              className="h-9 flex-1 text-xs"
+            >
+              {s.label}
+            </Chip>
+          ))}
+        </div>
+        {suggestError && <p className="text-sm text-danger">{suggestError}</p>}
+        <Button
+          variant="secondary"
+          full
+          onClick={suggestFromName}
+          disabled={suggesting || item.name.trim().length === 0}
+        >
+          {suggesting ? "Suggesting…" : "Suggest values from name"}
+        </Button>
       </div>
       {!valid && (
         <p className="text-sm text-danger">Enter grams and calories to continue.</p>
