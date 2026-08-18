@@ -50,9 +50,9 @@ Then open `http://<your-mac-ip>:3000` on the phone (same Wi-Fi). The auth cookie
 | `npm run seed` | Idempotent seed: targets, 3 logged meals, 2 planned dinners |
 | `npm run icons` | Re-rasterise `public/icon.svg` into the PWA icon set |
 
-## Apple Health
+## Activity
 
-Steps, calories burned, exercise minutes, resting heart rate, weight and workouts sync in from the iPhone once a day via a Shortcuts automation posting to `POST /api/activity/ingest` (bearer-authed with `APP_PASSWORD`). Every metric is optional, so Watch-less days degrade to steps alone. Setup guide, payload shape and troubleshooting: [docs/APPLE-HEALTH.md](docs/APPLE-HEALTH.md). Weight display can be switched off in Settings.
+Steps and exercise are entered by hand on the Today view: "Add steps or exercise" (or Edit on the Activity card) opens a sheet with a steps box and exercise rows (quick chips for Gym, Padel, Running and so on, plus calories burned and minutes, both optional). Saving replaces that day's entry, so edits are always safe. The Week tab rolls up steps, exercise calories and time. An earlier Apple Health Shortcuts sync was abandoned as too fiddly; its data still displays if present.
 
 ## Notes
 

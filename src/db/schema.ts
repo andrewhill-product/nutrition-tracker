@@ -126,9 +126,10 @@ export const discardedAnalyses = pgTable("discarded_analyses", {
 });
 
 /**
- * One row per day of Apple Health data, pushed by an iPhone Shortcuts
- * automation (see docs/APPLE-HEALTH.md). Every metric is nullable: days
- * without the Watch have steps only, and nothing here may break when absent.
+ * One row per day of activity, entered by hand on the Today view (steps,
+ * exercises). Every metric is nullable and nothing breaks when absent. The
+ * extra columns (energy, heart rate, weight) survive from the abandoned
+ * Apple Health sync and still display if rows carry them.
  */
 export const dailyActivity = pgTable("daily_activity", {
   date: date("date", { mode: "string" }).primaryKey(),
@@ -142,8 +143,9 @@ export const dailyActivity = pgTable("daily_activity", {
 });
 
 /**
- * Individual workouts from the Workout app, replaced wholesale per date on
- * each ingest so re-running the shortcut never duplicates rows.
+ * Individual exercises (Gym, Padel, Running...), replaced wholesale per date
+ * on each save so editing never duplicates rows. Calories and duration are
+ * both optional: an exercise with just a name is still worth recording.
  */
 export const workouts = pgTable(
   "workouts",
@@ -151,7 +153,7 @@ export const workouts = pgTable(
     id: serial("id").primaryKey(),
     date: date("date", { mode: "string" }).notNull(),
     activityType: text("activity_type").notNull(),
-    durationMin: integer("duration_min").notNull(),
+    durationMin: integer("duration_min"),
     activeKcal: integer("active_kcal"),
     startedAt: text("started_at"),
   },

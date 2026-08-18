@@ -144,16 +144,6 @@ export async function getWorkoutsRange(start: string, end: string): Promise<Work
     .orderBy(asc(workouts.date), asc(workouts.id));
 }
 
-/** When Apple Health data last arrived, or null if it never has. */
-export async function getActivityLastSync(): Promise<Date | null> {
-  const rows = await db
-    .select({ receivedAt: dailyActivity.receivedAt })
-    .from(dailyActivity)
-    .orderBy(desc(dailyActivity.receivedAt))
-    .limit(1);
-  return rows[0]?.receivedAt ?? null;
-}
-
 /** Dates that already have a planned dinner (import shows a replaces flag). */
 export async function getPlannedDinnerDates(): Promise<string[]> {
   const rows = await db

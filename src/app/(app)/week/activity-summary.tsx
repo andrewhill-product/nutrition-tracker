@@ -3,8 +3,10 @@ import { formatShort } from "@/lib/dates";
 import { intLabel, minutesLabel } from "@/lib/format";
 
 /**
- * Week roll-up of Apple Health data. Averages only count days that actually
- * synced a value, so Watch-less days never drag the numbers down.
+ * Week roll-up of activity. Averages only count days that actually have a
+ * value, so unrecorded days never drag the numbers down. Exercise time
+ * prefers the daily figure (legacy synced rows) and falls back to summing
+ * the manually entered exercises.
  */
 export function ActivitySummary({
   days,
@@ -19,7 +21,10 @@ export function ActivitySummary({
   const burnDays = days.filter(
     (d) => d.activeKcal !== null && d.restingKcal !== null
   );
-  const exerciseTotal = days.reduce((sum, d) => sum + (d.exerciseMinutes ?? 0), 0);
+  const dailyExercise = days.reduce((sum, d) => sum + (d.exerciseMinutes ?? 0), 0);
+  const workoutMin = workouts.reduce((sum, w) => sum + (w.durationMin ?? 0), 0);
+  const exerciseTotal = dailyExercise > 0 ? dailyExercise : workoutMin;
+  const workoutKcal = workouts.reduce((sum, w) => sum + (w.activeKcal ?? 0), 0);
   const avg = (nums: number[]) =>
     Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
 
@@ -36,6 +41,8 @@ export function ActivitySummary({
       ),
       label: "kcal burned a day",
     });
+  if (workoutKcal > 0 && burnDays.length === 0)
+    stats.push({ value: intLabel(workoutKcal), label: "exercise kcal" });
   if (exerciseTotal > 0)
     stats.push({ value: minutesLabel(exerciseTotal), label: "exercise this week" });
   if (workouts.length > 0)
@@ -51,10 +58,7 @@ export function ActivitySummary({
 
   return (
     <section className="rounded-2xl border border-line bg-surface p-4">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-semibold">Activity</h2>
-        <span className="text-xs text-muted">Apple Health</span>
-      </div>
+      <h2 className="mb-3 font-semibold">Activity</h2>
       {stats.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           {stats.map((s) => (

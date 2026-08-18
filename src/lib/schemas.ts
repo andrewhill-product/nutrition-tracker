@@ -169,40 +169,22 @@ export type ImportCommitT = z.infer<typeof ImportCommit>;
 export const LoginInput = z.object({ password: z.string().min(1) });
 
 /**
- * Apple Health numbers arrive from a Shortcuts automation, which renders
- * missing samples as "" and numbers sometimes as text. Blank means no data.
+ * Manual daily activity from the Today view: optional steps, plus exercises
+ * with optional calories and minutes (an exercise with just a name still
+ * counts). Save is authoritative: it replaces the day's steps and exercises.
  */
-const healthNumber = (min: number, max: number) =>
-  z.preprocess(
-    (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-    z.number().min(min).max(max).nullable()
-  );
-
-const requiredHealthNumber = (min: number, max: number) =>
-  z.preprocess(
-    (v) => (typeof v === "string" && v.trim() !== "" ? Number(v) : v),
-    z.number().min(min).max(max)
-  );
-
-export const ActivityWorkout = z.object({
+export const ActivityExercise = z.object({
   activity_type: z.string().min(1).max(100),
-  duration_min: requiredHealthNumber(0, 1440),
-  active_kcal: healthNumber(0, 10000).default(null),
-  started_at: z.string().max(40).nullish().default(null),
+  kcal: z.number().int().min(0).max(10000).nullish().default(null),
+  duration_min: z.number().int().min(0).max(1440).nullish().default(null),
 });
 
-export const ActivityIngest = z.object({
-  date: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), DateString),
-  steps: healthNumber(0, 500000).default(null),
-  active_kcal: healthNumber(0, 20000).default(null),
-  resting_kcal: healthNumber(0, 20000).default(null),
-  exercise_minutes: healthNumber(0, 1440).default(null),
-  resting_hr: healthNumber(20, 250).default(null),
-  weight_kg: healthNumber(20, 400).default(null),
-  // null (key absent) leaves stored workouts alone; [] clears the date.
-  workouts: z.array(ActivityWorkout).max(30).nullish().default(null),
+export const ActivitySave = z.object({
+  date: DateString,
+  steps: z.number().int().min(0).max(500000).nullable(),
+  workouts: z.array(ActivityExercise).max(20),
 });
-export type ActivityIngestT = z.infer<typeof ActivityIngest>;
+export type ActivitySaveT = z.infer<typeof ActivitySave>;
 
 export const DiscardInput = z.object({
   source: z.enum(["photo", "text"]).default("photo"),

@@ -6,16 +6,21 @@ import { useEffect, useRef, useState } from "react";
 import { formatShort, relativeLabel, todayLondon } from "@/lib/dates";
 import { fetchJson } from "@/lib/fetchJson";
 import type { RepeatWithItems } from "@/lib/queries";
-import type { AnalysisItemT, AnalysisResultT, Slot } from "@/lib/schemas";
+import type { AnalysisResultT, Slot } from "@/lib/schemas";
 import { SLOT_LABELS } from "@/lib/slots";
 import { ReviewScreen } from "../review/review-screen";
 import {
   draftFromAnalysis,
   emptyDraft,
+  scaleFinals,
   type ReviewDraft,
 } from "../review/types";
 import { ActionSheet, type CaptureAction } from "./action-sheet";
-import { AdditionsCard } from "./additions-card";
+import {
+  AdditionsCard,
+  type AdditionEntry,
+  type IngredientDecision,
+} from "./additions-card";
 import { AnalysingCard } from "./analysing-card";
 import { ErrorCard } from "./error-card";
 import { SlotPicker } from "./slot-picker";
@@ -76,7 +81,9 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
   const [labelPreviewUrl, setLabelPreviewUrl] = useState<string | null>(null);
   const [labelUploading, setLabelUploading] = useState(false);
   // Ingredients Andrew adds on the interstitial after a photo analysis.
-  const [additions, setAdditions] = useState<AnalysisItemT[]>([]);
+  // Keyed so checklist state survives additions appearing mid-edit.
+  const [additions, setAdditions] = useState<AdditionEntry[]>([]);
+  const additionKey = useRef(0);
   const [addingIngredients, setAddingIngredients] = useState(false);
   const [additionsError, setAdditionsError] = useState<string | null>(null);
 
@@ -362,7 +369,10 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
       );
       return false;
     }
-    setAdditions((prev) => [...prev, ...res.data.items]);
+    setAdditions((prev) => [
+      ...prev,
+      ...res.data.items.map((item) => ({ key: ++additionKey.current, item })),
+    ]);
     return true;
   }
 
@@ -387,20 +397,54 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
     reset();
   }
 
-  /** Merge the photo analysis with any added ingredients and open review. */
-  function continueToReview(analysis: AnalysisResultT) {
-    const combined = { ...analysis, items: [...analysis.items, ...additions] };
-    setState({
-      step: "review",
-      draft: withConversion(
-        draftFromAnalysis(combined, {
-          date,
-          slot: effectiveSlot ?? "snack",
-          source: "photo",
-          photoUrl: photoUrlRef.current,
-        })
-      ),
+  /**
+   * Apply the checklist decisions and open review. Unticked ingredients
+   * arrive pre-marked removed (they still reach meal_items, so calibration
+   * learns "that was not in the meal"); a changed quantity arrives as an
+   * edited verdict with macros scaled linearly from the AI baseline. The
+   * ai_* values are never touched: they stay the model's actual estimate.
+   */
+  function continueToReview(analysis: AnalysisResultT, decisions: IngredientDecision[]) {
+    const combined = { ...analysis, items: decisions.map((d) => d.item) };
+    const draft = draftFromAnalysis(combined, {
+      date,
+      slot: effectiveSlot ?? "snack",
+      source: "photo",
+      photoUrl: photoUrlRef.current,
     });
+    draft.items = draft.items.map((item, i) => {
+      const d = decisions[i];
+      if (!d.included) return { ...item, verdict: "removed" as const };
+      const aiQty = d.isCount ? item.ai.count : item.ai.grams;
+      if (aiQty === null || aiQty <= 0 || d.qty === aiQty) return item;
+      if (d.isCount && (item.ai.grams === null || item.ai.grams <= 0)) {
+        // Countable item with no gram baseline: scale macros by the count.
+        const f = d.qty / aiQty;
+        const scale = (v: number | null, dp: 0 | 1) =>
+          v === null ? null : dp === 0 ? Math.round(v * f) : Math.round(v * f * 10) / 10;
+        return {
+          ...item,
+          verdict: "edited" as const,
+          final: {
+            count: d.qty,
+            grams: item.ai.grams,
+            kcal: scale(item.ai.kcal, 0),
+            protein: scale(item.ai.protein, 1),
+            carbs: scale(item.ai.carbs, 1),
+            fat: scale(item.ai.fat, 1),
+            fibre: scale(item.ai.fibre, 1),
+            sugar: scale(item.ai.sugar, 1),
+          },
+        };
+      }
+      const grams = d.isCount
+        ? Math.round((item.ai.grams as number) * (d.qty / aiQty))
+        : Math.round(d.qty);
+      const final = scaleFinals(item, grams);
+      if (d.isCount) final.count = d.qty;
+      return { ...item, verdict: "edited" as const, final };
+    });
+    setState({ step: "review", draft: withConversion(draft) });
   }
 
   function openManualReview() {
@@ -616,10 +660,9 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                     adding={addingIngredients}
                     error={additionsError}
                     onAdd={estimateAdditions}
-                    onRemoveAddition={(index) =>
-                      setAdditions((prev) => prev.filter((_, i) => i !== index))
+                    onContinue={(decisions) =>
+                      continueToReview(state.analysis, decisions)
                     }
-                    onContinue={() => continueToReview(state.analysis)}
                     onCancel={() => discardFromAdditions(state.analysis)}
                   />
                 )}

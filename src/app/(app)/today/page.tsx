@@ -2,6 +2,7 @@ import { isDateString, todayLondon } from "@/lib/dates";
 import { getActivityDay, getDay, getTargets } from "@/lib/queries";
 import { dayTotals } from "@/lib/totals";
 import { ActivityCard } from "../_today/activity-card";
+import { ActivityEditor } from "../_today/activity-editor";
 import { DateHeader } from "../_today/date-header";
 import { SwipeDays } from "../_today/swipe-days";
 import { KcalRing } from "../_today/kcal-ring";
@@ -60,12 +61,38 @@ export default async function TodayPage({
           }}
         />
 
-        <ActivityCard
-          activity={activityDay.activity}
-          workouts={activityDay.workouts}
-          eatenKcal={totals.kcal}
-          showWeight={targets.showWeight}
-        />
+        {(() => {
+          const a = activityDay.activity;
+          const hasActivity =
+            activityDay.workouts.length > 0 ||
+            (a !== null &&
+              [a.steps, a.activeKcal, a.restingKcal, a.exerciseMinutes, a.restingHr, a.weightKg].some(
+                (v) => v !== null
+              ));
+          const editor = (variant: "corner" | "empty") => (
+            <ActivityEditor
+              date={date}
+              variant={variant}
+              initialSteps={a?.steps ?? null}
+              initialExercises={activityDay.workouts.map((w) => ({
+                activityType: w.activityType,
+                kcal: w.activeKcal,
+                durationMin: w.durationMin,
+              }))}
+            />
+          );
+          return hasActivity ? (
+            <ActivityCard
+              activity={a}
+              workouts={activityDay.workouts}
+              eatenKcal={totals.kcal}
+              showWeight={targets.showWeight}
+              action={editor("corner")}
+            />
+          ) : (
+            editor("empty")
+          );
+        })()}
 
         {logged.length === 0 && planned.length === 0 && (
           <div className="rounded-2xl border border-dashed border-line p-6 text-center text-muted">
