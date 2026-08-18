@@ -2,13 +2,14 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getEnv } from "@/lib/env";
 
 /**
- * Analyse runs on Sonnet 5: Haiku kept misreading meals, and on a handful of
- * calls a day the accuracy is worth the cost. Distil runs on Opus 5: it fires
- * rarely, and distilling real patterns from 50 corrections is judgment work
- * where a bad rule would skew every future estimate.
+ * Everything runs on Sonnet 5. Analyse moved off Haiku 4.5 (it kept
+ * misreading meals). Distil moved off Opus 5 after it dominated the bill:
+ * each press of Update calibration billed dollars of thinking tokens and
+ * could outlast the phone's 55s fetch window, so presses that looked failed
+ * were retried and billed again. Sonnet is far cheaper and finishes in time.
  */
 export const ANALYSE_MODEL = "claude-sonnet-5";
-export const DISTIL_MODEL = "claude-opus-5";
+export const DISTIL_MODEL = "claude-sonnet-5";
 
 let client: Anthropic | null = null;
 
@@ -38,17 +39,14 @@ export async function callClaudeJson(opts: {
   schema: object;
   effort?: "low" | "medium" | "high";
 }): Promise<ClaudeJsonResult> {
-  // Both are Claude 5 models: thinking is adaptive and always on (never pass
-  // the thinking param), and non-default temperature/top_p are 400s. Effort
-  // is optional; Sonnet defaults to high, so analyse passes medium to keep
-  // latency inside the mobile 55s cap. Only Opus takes the refusal-fallback
-  // beta: it has the safety classifier that can refuse, Sonnet does not.
+  // Sonnet 5: thinking is adaptive and always on (never pass the thinking
+  // param), and non-default temperature/top_p are 400s. Effort is optional
+  // and defaults to high; callers pass medium to balance quality against
+  // latency and thinking spend. The server-side fallback beta was Opus-only
+  // and left with it.
   const params = {
     model: opts.model,
     max_tokens: 16000,
-    ...(opts.model === DISTIL_MODEL
-      ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }
-      : {}),
     output_config: {
       effort: opts.effort ?? "medium",
       format: { type: "json_schema", schema: opts.schema },
@@ -58,7 +56,16 @@ export async function callClaudeJson(opts: {
   };
   const res = (await getClient().beta.messages.create(
     params as unknown as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming
-  )) as unknown as { stop_reason: string | null; content: ContentBlock[] };
+  )) as unknown as {
+    stop_reason: string | null;
+    content: ContentBlock[];
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  // Per-call token line in the Vercel function logs, so any future billing
+  // surprise is diagnosable without the platform console.
+  console.log(
+    `[claude] ${opts.model} in=${res.usage?.input_tokens ?? "?"} out=${res.usage?.output_tokens ?? "?"} stop=${res.stop_reason}`
+  );
 
   if (res.stop_reason === "refusal") return { kind: "refusal" };
   if (res.stop_reason === "max_tokens") return { kind: "truncated" };
