@@ -19,6 +19,7 @@ const SLOTS = [
   { value: "dinner", label: "Tea" },
   { value: "snack", label: "Snacks" },
   { value: "drink", label: "Drinks" },
+  { value: "alcohol", label: "Alcohol" },
 ] as const;
 
 export default async function TodayPage({

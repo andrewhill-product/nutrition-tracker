@@ -201,6 +201,8 @@ export function ReviewScreen({
       body: JSON.stringify({
         name: name.trim() || "Meal",
         slot: draft.slot,
+        // The meal's photo rides along so replays never need re-photographing.
+        photo_url: photoUrl,
         items: kept.map((i) => ({
           name: i.name,
           grams: i.final.grams,

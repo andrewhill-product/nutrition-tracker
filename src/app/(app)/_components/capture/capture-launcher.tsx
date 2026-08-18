@@ -42,7 +42,8 @@ function parseSlot(value: string | null): Slot | null {
     value === "lunch" ||
     value === "dinner" ||
     value === "snack" ||
-    value === "drink"
+    value === "drink" ||
+    value === "alcohol"
     ? value
     : null;
 }
@@ -488,6 +489,7 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
         name: r.name,
         source: "manual",
         status: "logged",
+        photo_url: r.photoUrl,
         items: r.items.map((i) => ({
           name: i.name,
           verdict: "edited",
@@ -630,9 +632,17 @@ export function CaptureLauncher({ repeats }: { repeats: RepeatWithItems[] }) {
                         type="button"
                         disabled={busyRepeatId !== null}
                         onClick={() => logRepeat(r)}
-                        className="flex w-full items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-4 text-left disabled:opacity-60"
+                        className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left disabled:opacity-60"
                       >
-                        <div className="min-w-0">
+                        {r.photoUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={r.photoUrl}
+                            alt=""
+                            className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold">{r.name}</p>
                           <p className="text-xs text-muted">{SLOT_LABELS[r.slot]}</p>
                         </div>

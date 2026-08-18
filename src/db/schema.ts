@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 // "dinner" is displayed as "Tea" throughout the UI (src/lib/slots.ts).
-export const slotEnum = pgEnum("slot", ["breakfast", "lunch", "dinner", "snack", "drink"]);
+export const slotEnum = pgEnum("slot", ["breakfast", "lunch", "dinner", "snack", "drink", "alcohol"]);
 export const sourceEnum = pgEnum("source", ["photo", "spreadsheet", "manual"]);
 export const statusEnum = pgEnum("status", ["logged", "planned"]);
 export const verdictEnum = pgEnum("verdict", ["up", "edited", "removed"]);
@@ -91,6 +91,9 @@ export const repeats = pgTable("repeats", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slot: slotEnum("slot").notNull(),
+  // The source meal's photo, carried onto every logged replay so a repeated
+  // meal never needs re-photographing.
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

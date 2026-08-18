@@ -5,7 +5,7 @@ export const DateString = z
   .string()
   .refine(isDateString, { message: "Expected a YYYY-MM-DD date" });
 
-export const SlotEnum = z.enum(["breakfast", "lunch", "dinner", "snack", "drink"]);
+export const SlotEnum = z.enum(["breakfast", "lunch", "dinner", "snack", "drink", "alcohol"]);
 export const SourceEnum = z.enum(["photo", "spreadsheet", "manual"]);
 export const StatusEnum = z.enum(["logged", "planned"]);
 export const VerdictEnum = z.enum(["up", "edited", "removed"]);
@@ -197,6 +197,7 @@ export type DiscardInputT = z.infer<typeof DiscardInput>;
 export const RepeatInput = z.object({
   name: z.string().min(1).max(200),
   slot: SlotEnum,
+  photo_url: z.url().nullish().default(null),
   items: z
     .array(
       z.object({

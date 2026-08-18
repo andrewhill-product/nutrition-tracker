@@ -16,7 +16,11 @@ export async function POST(req: NextRequest) {
   const created = await db.transaction(async (tx) => {
     const [repeat] = await tx
       .insert(repeats)
-      .values({ name: body.data.name, slot: body.data.slot })
+      .values({
+        name: body.data.name,
+        slot: body.data.slot,
+        photoUrl: body.data.photo_url,
+      })
       .returning();
     await tx.insert(repeatItems).values(
       body.data.items.map((i) => ({

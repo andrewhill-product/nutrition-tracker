@@ -7,7 +7,8 @@ export const SLOT_LABELS: Record<Slot, string> = {
   dinner: "Tea",
   snack: "Snack",
   drink: "Drink",
+  alcohol: "Alcohol",
 };
 
 /** Display order for slot groups. */
-export const SLOT_LIST: Slot[] = ["breakfast", "lunch", "dinner", "snack", "drink"];
+export const SLOT_LIST: Slot[] = ["breakfast", "lunch", "dinner", "snack", "drink", "alcohol"];

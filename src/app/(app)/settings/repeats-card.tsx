@@ -23,8 +23,16 @@ export function RepeatsCard({ repeats }: { repeats: RepeatWithItems[] }) {
       {repeats.length > 0 ? (
         <ul className="divide-y divide-line">
           {repeats.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-2 py-2">
-              <div className="min-w-0">
+            <li key={r.id} className="flex items-center gap-3 py-2">
+              {r.photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={r.photoUrl}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                />
+              )}
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{r.name}</p>
                 <p className="tnum text-xs text-muted">
                   {SLOT_LABELS[r.slot]} · {r.items.reduce((s, i) => s + i.kcal, 0)} kcal
